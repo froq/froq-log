@@ -1,7 +1,7 @@
 {
     "name": "froq/froq-logger",
     "homepage": "https://github.com/froq/froq-logger",
-    "description": "froq/froq-logger",
+    "description": "Logger module for Froq!",
     "keywords": ["froq", "logger"],
     "license": "GNU General Public License v3.0",
     "authors": [{
