@@ -25,8 +25,8 @@ namespace Froq\Logger;
 
 /**
  * @package    Froq
- * @subpackage Froq\Logger\Logger
- * @object     Froq\Logger\Logger\Logger
+ * @subpackage Froq\Logger
+ * @object     Froq\Logger\Logger
  * @author     Kerem Güneş <k-gun@mail.com>
  */
 final class Logger
