@@ -177,6 +177,9 @@ final class Logger
         $this->directoryChecked = $this->directoryChecked ?: is_dir($this->directory);
         if (!$this->directoryChecked) {
             $this->directoryChecked = mkdir($this->directory, 0644, true);
+            if ($this->directoryChecked === false) {
+                throw new LoggerException('Cannot create log directory!');
+            }
 
             // !!! NOTICE !!!
             // set your log dir secure
