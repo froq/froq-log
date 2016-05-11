@@ -83,13 +83,7 @@ final class Logger
      * Aims some performance, escaping to call "is_dir" function.
      * @var bool
      */
-    protected $directoryChecked = false;
-
-    /**
-     * Log file format with a valid date format (e.g 2015-01-01.txt)
-     * @var string
-     */
-    protected $filenameFormat = 'Y-m-d';
+    protected static $directoryChecked = false;
 
     /**
      * Set log level.
@@ -138,29 +132,6 @@ final class Logger
     }
 
     /**
-     * Set log filename format.
-     *
-     * @param  string $filenameFormat
-     * @return self
-     */
-    final public function setFilenameFormat(string $filenameFormat): self
-    {
-        $this->filenameFormat = $filenameFormat;
-
-        return $this;
-    }
-
-    /**
-     * Get log filename format.
-     *
-     * @return string
-     */
-    final public function getFilenameFormat(): string
-    {
-        return $this->filenameFormat;
-    }
-
-    /**
      * Check log directory, if not exists create it.
      *
      * @throws \RuntimeException
@@ -174,10 +145,10 @@ final class Logger
                 'Define it using `query_log_directory` key to activate logging.');
         }
 
-        $this->directoryChecked = $this->directoryChecked ?: is_dir($this->directory);
-        if (!$this->directoryChecked) {
-            $this->directoryChecked = mkdir($this->directory, 0644, true);
-            if ($this->directoryChecked === false) {
+        self::$directoryChecked = self::$directoryChecked ?: is_dir($this->directory);
+        if (!self::$directoryChecked) {
+            self::$directoryChecked = mkdir($this->directory, 0644, true);
+            if (self::$directoryChecked === false) {
                 throw new LoggerException('Cannot create log directory!');
             }
 
@@ -191,12 +162,11 @@ final class Logger
                 "Order deny,allow\r\nDeny from all");
         }
 
-        return $this->directoryChecked;
+        return self::$directoryChecked;
     }
 
     /**
      * Log given message by level.
-     *
      * @param  int $level
      * @param  any $message
      * @return bool|null
@@ -228,11 +198,7 @@ final class Logger
                 break;
         }
 
-        // prepare message date
         $messageDate = date('D, d M Y H:i:s O');
-
-        // prepare filename
-        $filename = sprintf('%s/%s.log', $this->directory, date($this->filenameFormat));
 
         // handle exception, object, array messages
         if ($message instanceof \Throwable) {
@@ -243,16 +209,16 @@ final class Logger
             $message = json_encode($message);
         }
 
-        // prepare message
-        $message = sprintf("[%s] [%s] %s\n\n",
+        // prepare message & message file
+        $message = sprintf("[%s] %s >> %s\n\n",
             $messageType, $messageDate, trim((string) $message));
+        $messageFile = sprintf('%s/%s.log', $this->directory, date('Y-m-d'));
 
-        return ((bool) file_put_contents($filename, $message, LOCK_EX | FILE_APPEND));
+        return error_log($message, 3, $messageFile);
     }
 
     /**
-     * Shortcut for fail logs.
-     *
+     * Log fail.
      * @param  any $message
      * @return bool|null
      */
@@ -262,8 +228,7 @@ final class Logger
     }
 
     /**
-     * Shortcut for warn logs.
-     *
+     * Log warn.
      * @param  any $message
      * @return bool|null
      */
@@ -273,8 +238,7 @@ final class Logger
     }
 
     /**
-     * Shortcut for info logs.
-     *
+     * Log info.
      * @param  any $message
      * @return bool|null
      */
@@ -284,8 +248,7 @@ final class Logger
     }
 
     /**
-     * Shortcut for debug logs.
-     *
+     * Log debug.
      * @param  any $message
      * @return bool|null
      */
