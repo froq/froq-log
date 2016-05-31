@@ -213,9 +213,10 @@ final class Logger
 
         // handle exception, object, array messages
         if ($message instanceof \Throwable) {
-            $message = get_class($message) ." thrown in '". $message->getFile() .":".
-                $message->getLine() ."' with message '". $message->getMessage() ."'.\n".
-                $message->getTraceAsString() ."\n";
+            $message = sprintf("%s: '%s' in '%s:%s'.\n%s\n", get_class($message),
+                $message->getMessage(), $message->getFile(), $message->getLine(),
+                $message->getTraceAsString()
+            );
         } elseif (is_array($message) || is_object($message)) {
             $message = json_encode($message);
         }
