@@ -86,6 +86,17 @@ final class Logger
     protected static $directoryChecked = false;
 
     /**
+     * Constructor.
+     * @param int    $level
+     * @param string $directory
+     */
+    final public function __construct(int $level = 0, string $directory = null)
+    {
+        $this->level = $level;
+        $this->directory = $directory;
+    }
+
+    /**
      * Set log level.
      *
      * @param  int $level
