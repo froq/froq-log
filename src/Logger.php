@@ -32,73 +32,72 @@ namespace Froq\Logger;
 final class Logger
 {
     /**
-     * Log only error events.
-     * @const int
-     */
-    const FAIL = 2;
-
-    /**
-     * Log only warning events.
-     * @const int
-     */
-    const WARN = 4;
-
-    /**
-     * Log only informal events.
-     * @const int
-     */
-    const INFO = 8;
-
-    /**
-     * Log only debugging events.
-     * @const int
-     */
-    const DEBUG = 16;
-
-    /**
-     * Log all events (FAIL | WARN | INFO | DEBUG).
-     * @const int
-     */
-    const ALL = 30;
-
-    /**
-     * No log.
+     * None.
      * @const int
      */
     const NONE = 0;
 
     /**
-     * Log level, disabled as default.
+     * Fail.
+     * @const int
+     */
+    const FAIL = 2;
+
+    /**
+     * Warn.
+     * @const int
+     */
+    const WARN = 4;
+
+    /**
+     * Info.
+     * @const int
+     */
+    const INFO = 8;
+
+    /**
+     * Debug.
+     * @const int
+     */
+    const DEBUG = 16;
+
+    /**
+     * All.
+     * @const int
+     */
+    const ALL = 30;
+
+    /**
+     * Log level.
      * @var int
      */
-    protected $level = 0;
+    private $level = self::NONE;
 
     /**
-     * Log directory.
+     * Directory.
      * @var string
      */
-    protected $directory;
+    private $directory;
 
     /**
-     * Aims some performance, escaping to call "is_dir" function.
+     * Directory checked.
      * @var bool
      */
-    protected static $directoryChecked = false;
+    private static $directoryChecked = false;
 
     /**
      * Constructor.
      * @param int    $level
      * @param string $directory
      */
-    final public function __construct(int $level = 0, string $directory = null)
+    final public function __construct(int $level = self::NONE, string $directory = null)
     {
         $this->level = $level;
         $this->directory = $directory;
     }
 
     /**
-     * Set log level.
-     *
+     * Set level.
      * @param  int $level
      * @return self
      */
@@ -110,8 +109,7 @@ final class Logger
     }
 
     /**
-     * Get log level.
-     *
+     * Get level.
      * @return int
      */
     final public function getLevel(): int
@@ -120,8 +118,7 @@ final class Logger
     }
 
     /**
-     * Set log directory.
-     *
+     * Set directory.
      * @param  string $directory
      * @return self
      */
@@ -133,8 +130,7 @@ final class Logger
     }
 
     /**
-     * Get log directory.
-     *
+     * Get directory.
      * @return string
      */
     final public function getDirectory(): string
@@ -143,12 +139,11 @@ final class Logger
     }
 
     /**
-     * Check log directory, if not exists create it.
-     *
-     * @throws \RuntimeException
+     * Check directory.
      * @return bool
+     * @throws Froq\Logger\LoggerException
      */
-    public function checkDirectory(): bool
+    final public function checkDirectory(): bool
     {
         if (empty($this->directory)) {
             throw new LoggerException(
@@ -163,7 +158,6 @@ final class Logger
                 throw new LoggerException('Cannot create log directory!');
             }
 
-            // !!! NOTICE !!!
             // set your log dir secure
             file_put_contents($this->directory .'/index.php',
                 "<?php header('HTTP/1.1 403 Forbidden'); ?>");
@@ -177,7 +171,7 @@ final class Logger
     }
 
     /**
-     * Log given message by level.
+     * Log.
      * @param  int $level
      * @param  any $message
      * @return bool|null
@@ -186,7 +180,7 @@ final class Logger
     {
         // no log
         if (!$level || ($level & $this->level) == 0) {
-            return;
+            return null;
         }
 
         // ensure log directory
