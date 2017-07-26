@@ -90,7 +90,7 @@ final class Logger
      * @param int    $level
      * @param string $directory
      */
-    public final function __construct(int $level = self::NONE, string $directory = null)
+    public function __construct(int $level = self::NONE, string $directory = null)
     {
         $this->level = $level;
         $this->directory = $directory;
@@ -101,7 +101,7 @@ final class Logger
      * @param  int $level
      * @return self
      */
-    public final function setLevel(int $level): self
+    public function setLevel(int $level): self
     {
         $this->level = $level;
 
@@ -112,7 +112,7 @@ final class Logger
      * Get level.
      * @return int
      */
-    public final function getLevel(): int
+    public function getLevel(): int
     {
         return $this->level;
     }
@@ -122,7 +122,7 @@ final class Logger
      * @param  string $directory
      * @return self
      */
-    public final function setDirectory(string $directory): self
+    public function setDirectory(string $directory): self
     {
         $this->directory = $directory;
 
@@ -133,7 +133,7 @@ final class Logger
      * Get directory.
      * @return string
      */
-    public final function getDirectory(): string
+    public function getDirectory(): string
     {
         return $this->directory;
     }
@@ -143,7 +143,7 @@ final class Logger
      * @return bool
      * @throws Froq\Logger\LoggerException
      */
-    public final function checkDirectory(): bool
+    public function checkDirectory(): bool
     {
         if (empty($this->directory)) {
             throw new LoggerException(
@@ -176,7 +176,7 @@ final class Logger
      * @param  any $message
      * @return bool|null
      */
-    public final function log(int $level, $message)
+    public function log(int $level, $message)
     {
         // no log
         if (!$level || ($level & $this->level) == 0) {
@@ -228,7 +228,7 @@ final class Logger
      * @param  any $message
      * @return bool|null
      */
-    public final function logFail($message)
+    public function logFail($message)
     {
         return $this->log(self::FAIL, $message);
     }
@@ -238,7 +238,7 @@ final class Logger
      * @param  any $message
      * @return bool|null
      */
-    public final function logWarn($message)
+    public function logWarn($message)
     {
         return $this->log(self::WARN, $message);
     }
@@ -248,7 +248,7 @@ final class Logger
      * @param  any $message
      * @return bool|null
      */
-    public final function logInfo($message)
+    public function logInfo($message)
     {
         return $this->log(self::INFO, $message);
     }
@@ -258,7 +258,7 @@ final class Logger
      * @param  any $message
      * @return bool|null
      */
-    public final function logDebug($message)
+    public function logDebug($message)
     {
         return $this->log(self::DEBUG, $message);
     }
