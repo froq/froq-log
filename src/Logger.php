@@ -35,43 +35,43 @@ final class Logger
      * None.
      * @const int
      */
-    const NONE = 0;
+    public const NONE = 0;
 
     /**
      * Fail.
      * @const int
      */
-    const FAIL = 2;
+    public const FAIL = 2;
 
     /**
      * Warn.
      * @const int
      */
-    const WARN = 4;
+    public const WARN = 4;
 
     /**
      * Info.
      * @const int
      */
-    const INFO = 8;
+    public const INFO = 8;
 
     /**
      * Debug.
      * @const int
      */
-    const DEBUG = 16;
+    public const DEBUG = 16;
 
     /**
      * All.
      * @const int
      */
-    const ALL = 30;
+    public const ALL = 30;
 
     /**
      * Log level.
      * @var int
      */
-    private $level = self::NONE;
+    private $level = 0; // none
 
     /**
      * Directory.
@@ -90,7 +90,7 @@ final class Logger
      * @param int    $level
      * @param string $directory
      */
-    public function __construct(int $level = self::NONE, string $directory = null)
+    public function __construct(int $level = 0, string $directory = null)
     {
         $this->level = $level;
         $this->directory = $directory;
