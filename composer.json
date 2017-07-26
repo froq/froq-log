@@ -8,7 +8,7 @@
         {"name": "Kerem Güneş", "email": "k-gun@mail.com"}
     ],
     "require": {
-        "php": "^7.0"
+        "php": "^7.1"
     },
     "autoload": {
         "classmap": ["src/"]
