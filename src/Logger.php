@@ -153,7 +153,7 @@ final class Logger
 
         self::$directoryChecked = self::$directoryChecked ?: is_dir($this->directory);
         if (!self::$directoryChecked) {
-            self::$directoryChecked =@ mkdir($this->directory, 0644, true);
+            self::$directoryChecked = mkdir($this->directory, 0644, true);
             if (self::$directoryChecked === false) {
                 throw new LoggerException('Cannot create log directory!');
             }
