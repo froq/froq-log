@@ -174,9 +174,9 @@ final class Logger
      * Log.
      * @param  int $level
      * @param  any $message
-     * @return bool|null
+     * @return ?bool
      */
-    public function log(int $level, $message)
+    public function log(int $level, $message): ?bool
     {
         // no log
         if (!$level || ($level & $this->level) == 0) {
@@ -226,9 +226,9 @@ final class Logger
     /**
      * Log fail.
      * @param  any $message
-     * @return bool|null
+     * @return ?bool
      */
-    public function logFail($message)
+    public function logFail($message): ?bool
     {
         return $this->log(self::FAIL, $message);
     }
@@ -236,9 +236,9 @@ final class Logger
     /**
      * Log warn.
      * @param  any $message
-     * @return bool|null
+     * @return ?bool
      */
-    public function logWarn($message)
+    public function logWarn($message): ?bool
     {
         return $this->log(self::WARN, $message);
     }
@@ -246,9 +246,9 @@ final class Logger
     /**
      * Log info.
      * @param  any $message
-     * @return bool|null
+     * @return ?bool
      */
-    public function logInfo($message)
+    public function logInfo($message): ?bool
     {
         return $this->log(self::INFO, $message);
     }
@@ -256,9 +256,9 @@ final class Logger
     /**
      * Log debug.
      * @param  any $message
-     * @return bool|null
+     * @return ?bool
      */
-    public function logDebug($message)
+    public function logDebug($message): ?bool
     {
         return $this->log(self::DEBUG, $message);
     }
