@@ -212,9 +212,12 @@ final class Logger
         }
 
         // prepare message & message file
-        $message = sprintf("[%s] %s >> %s\n\n",
-            $messageType, $messageDate, trim((string) $message));
+        $message = sprintf("[%s] %s >> %s\n\n", $messageType, $messageDate, trim((string) $message));
         $messageFile = sprintf('%s/%s.log', $this->directory, date('Y-m-d'));
+        // because permissions..
+        if (PHP_SAPI == 'cli-server') {
+            $messageFile = sprintf('%s/%s_cli-server.log', $this->directory, date('Y-m-d'));
+        }
 
         return error_log($message, 3, $messageFile);
     }
