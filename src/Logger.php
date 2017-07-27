@@ -155,8 +155,7 @@ final class Logger
         if (!self::$directoryChecked) {
             self::$directoryChecked =@ mkdir($this->directory, 0644, true);
             if (self::$directoryChecked === false) {
-                throw new LoggerException(sprintf('Cannot create log directory [%s]!',
-                    strtolower(error_get_last()['message'] ?? '')));
+                throw new LoggerException('Cannot create log directory!');
             }
 
             // @note: set your log dir secure! this action is for only apache, see nginx
