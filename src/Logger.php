@@ -90,7 +90,7 @@ final class Logger
      * @param int    $level
      * @param string $directory
      */
-    public function __construct(int $level = 0, string $directory = null)
+    public function __construct(int $level = self::NONE, string $directory = null)
     {
         $this->level = $level;
         $this->directory = $directory;
@@ -131,9 +131,9 @@ final class Logger
 
     /**
      * Get directory.
-     * @return string
+     * @return ?string
      */
-    public function getDirectory(): string
+    public function getDirectory(): ?string
     {
         return $this->directory;
     }
@@ -146,9 +146,7 @@ final class Logger
     public function checkDirectory(): bool
     {
         if (empty($this->directory)) {
-            throw new LoggerException(
-                'Log directory is not defined in given configuration! '.
-                'Define it using `query_log_directory` key to activate logging.');
+            throw new LoggerException('Log directory is not defined yet!');
         }
 
         self::$directoryChecked = self::$directoryChecked ?: is_dir($this->directory);
