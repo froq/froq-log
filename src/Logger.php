@@ -153,18 +153,15 @@ final class Logger
 
         self::$directoryChecked = self::$directoryChecked ?: is_dir($this->directory);
         if (!self::$directoryChecked) {
-            self::$directoryChecked = mkdir($this->directory, 0644, true);
+            self::$directoryChecked =@ mkdir($this->directory, 0644, true);
             if (self::$directoryChecked === false) {
-                throw new LoggerException('Cannot create log directory!');
+                throw new LoggerException(sprintf('Cannot create log directory [%s]!',
+                    strtolower(error_get_last()['message'] ?? '')));
             }
 
-            // set your log dir secure
-            file_put_contents($this->directory .'/index.php',
-                "<?php header('HTTP/1.1 403 Forbidden'); ?>");
-            // this action is for only apache, see nginx configuration here:
-            // http://nginx.org/en/docs/http/ngx_http_access_module.html
-            file_put_contents($this->directory .'/.htaccess',
-                "Order deny,allow\r\nDeny from all");
+            // @note: set your log dir secure! this action is for only apache, see nginx
+            // configuration here: http://nginx.org/en/docs/http/ngx_http_access_module.html
+            file_put_contents($this->directory .'/.htaccess', "Order deny,allow\r\nDeny from all");
         }
 
         return self::$directoryChecked;
