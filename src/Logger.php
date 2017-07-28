@@ -173,7 +173,7 @@ final class Logger
     public function log(int $level, $message): ?bool
     {
         // no log
-        if (!$level || ($level & $this->level) == 0) {
+        if (!$level || !($level & $this->level)) {
             return null;
         }
 
