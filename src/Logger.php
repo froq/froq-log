@@ -153,12 +153,9 @@ final class Logger
         if (!self::$directoryChecked) {
             self::$directoryChecked = mkdir($this->directory, 0644, true);
             if (self::$directoryChecked === false) {
-                throw new LoggerException('Cannot create log directory!');
+                throw new LoggerException(sprintf('Cannot create log directory! Error: %s.',
+                    error_get_last()['message'] ?? 'Unknown'));
             }
-
-            // @note: set your log dir secure! this action is for only apache, see nginx
-            // configuration here: http://nginx.org/en/docs/http/ngx_http_access_module.html
-            file_put_contents($this->directory .'/.htaccess', "Order deny,allow\r\nDeny from all");
         }
 
         return self::$directoryChecked;
@@ -183,18 +180,10 @@ final class Logger
         // prepare message prepend
         $messageType = '';
         switch ($level) {
-            case self::FAIL:
-                $messageType = 'FAIL';
-                break;
-            case self::INFO:
-                $messageType = 'INFO';
-                break;
-            case self::WARN:
-                $messageType = 'WARN';
-                break;
-            case self::DEBUG:
-                $messageType = 'DEBUG';
-                break;
+            case self::FAIL: $messageType = 'FAIL'; break;
+            case self::INFO: $messageType = 'INFO'; break;
+            case self::WARN: $messageType = 'WARN'; break;
+            case self::DEBUG: $messageType = 'DEBUG'; break;
         }
 
         $messageDate = date('D, d M Y H:i:s O');
@@ -209,15 +198,24 @@ final class Logger
             $message = json_encode($message);
         }
 
+        // fix non-binary safe issue of error_log()
+        $message = str_replace(chr(0), 'NU??', $message);
+
         // prepare message & message file
         $message = sprintf("[%s] %s >> %s\n\n", $messageType, $messageDate, trim((string) $message));
         $messageFile = sprintf('%s/%s.log', $this->directory, date('Y-m-d'));
         // because permissions..
         if (PHP_SAPI == 'cli-server') {
-            $messageFile = sprintf('%s/%s_cli-server.log', $this->directory, date('Y-m-d'));
+            $messageFile = sprintf('%s/%s-cli-server.log', $this->directory, date('Y-m-d'));
         }
 
-        return error_log($message, 3, $messageFile);
+        $return = error_log($message, 3, $messageFile);
+        if (!$return) {
+            throw new LoggerException(sprintf('Log failed! Error: %s.',
+                error_get_last()['message'] ?? 'Unknown'));
+        }
+
+        return $return;
     }
 
     /**
