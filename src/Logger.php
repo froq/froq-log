@@ -198,11 +198,11 @@ final class Logger
             $message = json_encode($message);
         }
 
-        // fix non-binary safe issue of error_log()
-        $message = str_replace(chr(0), 'NU??', $message);
+        $message = sprintf("[%s] %s >> %s\n\n", $messageType, $messageDate,
+            // fix non-binary safe issue of error_log()
+            str_replace(chr(0), 'NU??', trim((string) $message))
+        );
 
-        // prepare message & message file
-        $message = sprintf("[%s] %s >> %s\n\n", $messageType, $messageDate, trim((string) $message));
         $messageFile = sprintf('%s/%s.log', $this->directory, date('Y-m-d'));
         // because permissions..
         if (PHP_SAPI == 'cli-server') {
