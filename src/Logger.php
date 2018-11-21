@@ -165,6 +165,7 @@ final class Logger
      * Log.
      * @param  int $level
      * @param  any $message
+     * @throws Froq\Logger\LoggerException
      * @return ?bool
      */
     public function log(int $level, $message): ?bool
