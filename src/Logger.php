@@ -149,14 +149,14 @@ final class Logger
     public function checkDirectory(): bool
     {
         if (empty($this->directory)) {
-            throw new LoggerException('Log directory is not defined yet!');
+            throw new LoggerException('Log directory is not defined yet.');
         }
 
         self::$directoryChecked = self::$directoryChecked ?: is_dir($this->directory);
         if (!self::$directoryChecked) {
-            self::$directoryChecked = mkdir($this->directory, 0644, true);
+            self::$directoryChecked = (bool) @mkdir($this->directory, 0644, true);
             if (self::$directoryChecked === false) {
-                throw new LoggerException(sprintf('Cannot create log directory! Error: %s.',
+                throw new LoggerException(sprintf('Cannot make directory, error[%s].',
                     error_get_last()['message'] ?? 'Unknown'));
             }
         }
@@ -202,7 +202,7 @@ final class Logger
             $message = json_encode($message);
         }
 
-        $message = sprintf("[%s] %s >> %s\n\n", $messageType, $messageDate,
+        $message = sprintf("[%s] %s ~ %s\n\n", $messageType, $messageDate,
             // fix non-binary safe issue of error_log()
             str_replace(chr(0), 'NU??', trim((string) $message))
         );
@@ -215,7 +215,7 @@ final class Logger
 
         $return = error_log($message, 3, $messageFile);
         if (!$return) {
-            throw new LoggerException(sprintf('Log failed! Error: %s.',
+            throw new LoggerException(sprintf('Log failed, error[%s].',
                 error_get_last()['message'] ?? 'Unknown'));
         }
 
