@@ -31,6 +31,7 @@ namespace Froq\Logger;
  * @subpackage Froq\Logger
  * @object     Froq\Logger\LoggerException
  * @author     Kerem Güneş <k-gun@mail.com>
+ * @since      1.0
  */
 final class LoggerException extends \Exception
 {}
