@@ -103,13 +103,11 @@ final class Logger
     /**
      * Set level.
      * @param  int $level
-     * @return self
+     * @return void
      */
-    public function setLevel(int $level): self
+    public function setLevel(int $level): void
     {
         $this->level = $level;
-
-        return $this;
     }
 
     /**
@@ -124,13 +122,11 @@ final class Logger
     /**
      * Set directory.
      * @param  string $directory
-     * @return self
+     * @return void
      */
-    public function setDirectory(string $directory): self
+    public function setDirectory(string $directory): void
     {
         $this->directory = $directory;
-
-        return $this;
     }
 
     /**
