@@ -24,14 +24,14 @@
  */
 declare(strict_types=1);
 
-namespace Froq\Logger;
+namespace froq\logger;
 
 /**
- * @package    Froq
- * @subpackage Froq\Logger
- * @object     Froq\Logger\LoggerException
- * @author     Kerem Güneş <k-gun@mail.com>
- * @since      1.0
+ * Logger exception.
+ * @package froq\logger
+ * @object  froq\logger\LoggerException
+ * @author  Kerem Güneş <k-gun@mail.com>
+ * @since   1.0
  */
 final class LoggerException extends \Exception
 {}

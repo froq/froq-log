@@ -24,14 +24,14 @@
  */
 declare(strict_types=1);
 
-namespace Froq\Logger;
+namespace froq\logger;
 
 /**
- * @package    Froq
- * @subpackage Froq\Logger
- * @object     Froq\Logger\Logger
- * @author     Kerem Güneş <k-gun@mail.com>
- * @since      1.0
+ * Logger.
+ * @package froq\logger
+ * @object  froq\logger\Logger
+ * @author  Kerem Güneş <k-gun@mail.com>
+ * @since   1.0
  */
 final class Logger
 {
@@ -141,7 +141,7 @@ final class Logger
     /**
      * Check directory.
      * @return bool
-     * @throws Froq\Logger\LoggerException
+     * @throws froq\logger\LoggerException
      */
     public function checkDirectory(): bool
     {
@@ -165,7 +165,7 @@ final class Logger
      * Log.
      * @param  int $level
      * @param  any $message
-     * @throws Froq\Logger\LoggerException
+     * @throws froq\logger\LoggerException
      * @return ?bool
      */
     public function log(int $level, $message): ?bool
