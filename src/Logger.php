@@ -182,10 +182,16 @@ final class Logger
         // prepare message prepend
         $messageType = '';
         switch ($level) {
-            case self::FAIL: $messageType = 'FAIL'; break;
-            case self::INFO: $messageType = 'INFO'; break;
-            case self::WARN: $messageType = 'WARN'; break;
-            case self::DEBUG: $messageType = 'DEBUG'; break;
+            case self::FAIL:
+                $messageType = 'FAIL'; break;
+            case self::INFO:
+                $messageType = 'INFO'; break;
+            case self::WARN:
+                $messageType = 'WARN'; break;
+            case self::DEBUG:
+                $messageType = 'DEBUG'; break;
+            default:
+                $messageType = 'LOG';
         }
 
         $messageDate = date('D, d M Y H:i:s O');
