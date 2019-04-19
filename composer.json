@@ -11,6 +11,7 @@
         "php": "^7.2"
     },
     "autoload": {
-        "classmap": ["src/"]
+        "classmap": ["src/"],
+           "files": ["src/sugars.php"]
     }
 }
