@@ -165,11 +165,11 @@ final class Logger
      * Log.
      * @param  int  $level
      * @param  any  $message
-     * @param  bool $seperate
+     * @param  bool $separate
      * @throws froq\logger\LoggerException
      * @return ?bool
      */
-    public function log(int $level, $message, bool $seperate = true): ?bool
+    public function log(int $level, $message, bool $separate = true): ?bool
     {
         // no log
         if (!$level || !($level & $this->level)) {
@@ -209,7 +209,7 @@ final class Logger
         $message = sprintf('[%s] %s ~ %s%s', $messageType, $messageDate,
             // fix non-binary safe issue of error_log()
             str_replace(chr(0), 'NU??', trim((string) $message)),
-            $seperate ? "\n\n" : "\n"
+            $separate ? "\n\n" : "\n"
         );
 
         $messageFile = sprintf('%s/%s.log', $this->directory, date('Y-m-d'));
@@ -230,44 +230,44 @@ final class Logger
     /**
      * Log fail.
      * @param  any  $message
-     * @param  bool $seperate
+     * @param  bool $separate
      * @return ?bool
      */
-    public function logFail($message, bool $seperate = true): ?bool
+    public function logFail($message, bool $separate = true): ?bool
     {
-        return $this->log(self::FAIL, $message, $seperate);
+        return $this->log(self::FAIL, $message, $separate);
     }
 
     /**
      * Log warn.
      * @param  any  $message
-     * @param  bool $seperate
+     * @param  bool $separate
      * @return ?bool
      */
-    public function logWarn($message, bool $seperate = true): ?bool
+    public function logWarn($message, bool $separate = true): ?bool
     {
-        return $this->log(self::WARN, $message, $seperate);
+        return $this->log(self::WARN, $message, $separate);
     }
 
     /**
      * Log info.
      * @param  any  $message
-     * @param  bool $seperate
+     * @param  bool $separate
      * @return ?bool
      */
-    public function logInfo($message, bool $seperate = true): ?bool
+    public function logInfo($message, bool $separate = true): ?bool
     {
-        return $this->log(self::INFO, $message, $seperate);
+        return $this->log(self::INFO, $message, $separate);
     }
 
     /**
      * Log debug.
      * @param  any  $message
-     * @param  bool $seperate
+     * @param  bool $separate
      * @return ?bool
      */
-    public function logDebug($message, bool $seperate = true): ?bool
+    public function logDebug($message, bool $separate = true): ?bool
     {
-        return $this->log(self::DEBUG, $message, $seperate);
+        return $this->log(self::DEBUG, $message, $separate);
     }
 }
