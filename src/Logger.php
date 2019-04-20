@@ -91,10 +91,10 @@ final class Logger
 
     /**
      * Constructor.
-     * @param int    $level
-     * @param string $directory
+     * @param int         $level
+     * @param string|null $directory
      */
-    public function __construct(int $level = self::NONE, string $directory = null)
+    public function __construct(int $level = 0, string $directory = null)
     {
         $this->level = $level;
         $this->directory = $directory;
@@ -145,7 +145,7 @@ final class Logger
      */
     public function checkDirectory(): bool
     {
-        if (empty($this->directory)) {
+        if ($this->directory == null) {
             throw new LoggerException('Log directory is not defined yet');
         }
 
