@@ -36,40 +36,13 @@ namespace froq\logger;
 final class Logger
 {
     /**
-     * None.
+     * Levels.
      * @const int
      */
-    public const NONE = 0;
-
-    /**
-     * Fail.
-     * @const int
-     */
-    public const FAIL = 2;
-
-    /**
-     * Warn.
-     * @const int
-     */
-    public const WARN = 4;
-
-    /**
-     * Info.
-     * @const int
-     */
-    public const INFO = 8;
-
-    /**
-     * Debug.
-     * @const int
-     */
-    public const DEBUG = 16;
-
-    /**
-     * All.
-     * @const int
-     */
-    public const ALL = 30;
+    public const NONE  = 0,  FAIL  = 2,
+                 WARN  = 4,  INFO  = 8,
+                 DEBUG = 16, ALL   = 30,
+                 ANY   = -1; // just to pass none (0)
 
     /**
      * Log level.
@@ -169,7 +142,7 @@ final class Logger
      * @throws froq\logger\LoggerException
      * @return ?bool
      */
-    public function log(int $level, $message, bool $separate = true): ?bool
+    public function log(int $level, $message, bool $separate = false): ?bool
     {
         // no log
         if (!$level || !($level & $this->level)) {
@@ -209,6 +182,7 @@ final class Logger
         $message = sprintf('[%s] %s ~ %s%s', $messageType, $messageDate,
             // fix non-binary safe issue of error_log()
             str_replace(chr(0), 'NU??', trim((string) $message)),
+            // new lines
             $separate ? "\n\n" : "\n"
         );
 
@@ -228,12 +202,24 @@ final class Logger
     }
 
     /**
+     * Log any.
+     * @param  any  $message
+     * @param  bool $separate
+     * @return ?bool
+     * @since  3.2
+     */
+    public function logAny($message, bool $separate = false): ?bool
+    {
+        return $this->log(self::ANY, $message, $separate);
+    }
+
+    /**
      * Log fail.
      * @param  any  $message
      * @param  bool $separate
      * @return ?bool
      */
-    public function logFail($message, bool $separate = true): ?bool
+    public function logFail($message, bool $separate = false): ?bool
     {
         return $this->log(self::FAIL, $message, $separate);
     }
@@ -244,7 +230,7 @@ final class Logger
      * @param  bool $separate
      * @return ?bool
      */
-    public function logWarn($message, bool $separate = true): ?bool
+    public function logWarn($message, bool $separate = false): ?bool
     {
         return $this->log(self::WARN, $message, $separate);
     }
@@ -255,7 +241,7 @@ final class Logger
      * @param  bool $separate
      * @return ?bool
      */
-    public function logInfo($message, bool $separate = true): ?bool
+    public function logInfo($message, bool $separate = false): ?bool
     {
         return $this->log(self::INFO, $message, $separate);
     }
@@ -266,7 +252,7 @@ final class Logger
      * @param  bool $separate
      * @return ?bool
      */
-    public function logDebug($message, bool $separate = true): ?bool
+    public function logDebug($message, bool $separate = false): ?bool
     {
         return $this->log(self::DEBUG, $message, $separate);
     }

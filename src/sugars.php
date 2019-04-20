@@ -36,12 +36,23 @@ function logger(): Logger
 }
 
 /**
+ * Log any.
+ * @param  any  $message
+ * @param  bool $separate
+ * @return ?bool
+ */
+function log_any($message, bool $separate = false): ?bool
+{
+    return logger()->logAny($message, $separate);
+}
+
+/**
  * Log fail.
  * @param  any  $message
  * @param  bool $separate
  * @return ?bool
  */
-function log_fail($message, bool $separate = true): ?bool
+function log_fail($message, bool $separate = false): ?bool
 {
     return logger()->logFail($message, $separate);
 }
@@ -52,7 +63,7 @@ function log_fail($message, bool $separate = true): ?bool
  * @param  bool $separate
  * @return ?bool
  */
-function log_warn($message, bool $separate = true): ?bool
+function log_warn($message, bool $separate = false): ?bool
 {
     return logger()->logWarn($message, $separate);
 }
@@ -63,7 +74,7 @@ function log_warn($message, bool $separate = true): ?bool
  * @param  bool $separate
  * @return ?bool
  */
-function log_info($message, bool $separate = true): ?bool
+function log_info($message, bool $separate = false): ?bool
 {
     return logger()->logInfo($message, $separate);
 }
@@ -74,7 +85,7 @@ function log_info($message, bool $separate = true): ?bool
  * @param  bool $separate
  * @return ?bool
  */
-function log_debug($message, bool $separate = true): ?bool
+function log_debug($message, bool $separate = false): ?bool
 {
     return logger()->logDebug($message, $separate);
 }
