@@ -179,7 +179,7 @@ final class Logger
             $message = json_encode($message);
         }
 
-        $message = sprintf('[%s] %s ~ %s%s', $messageType, $messageDate,
+        $message = sprintf('[%s] %s | %s%s', $messageType, $messageDate,
             // fix non-binary safe issue of error_log()
             str_replace(chr(0), 'NU??', trim((string) $message)),
             // new lines
