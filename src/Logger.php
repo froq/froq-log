@@ -124,7 +124,7 @@ final class Logger
 
         self::$directoryChecked = self::$directoryChecked ?: is_dir($this->directory);
         if (!self::$directoryChecked) {
-            self::$directoryChecked = (bool) @mkdir($this->directory, 0644, true);
+            self::$directoryChecked =@ (bool) mkdir($this->directory, 0644, true);
             if (self::$directoryChecked === false) {
                 throw new LoggerException(sprintf('Cannot make directory, error[%s]',
                     error_get_last()['message'] ?? 'Unknown'));
