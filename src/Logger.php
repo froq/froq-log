@@ -26,6 +26,10 @@ declare(strict_types=1);
 
 namespace froq\logger;
 
+use froq\logger\LoggerException;
+use froq\traits\OptionTrait;
+use Throwable;
+
 /**
  * Logger.
  * @package froq\logger
@@ -36,70 +40,163 @@ namespace froq\logger;
 final class Logger
 {
     /**
+     * Options trait.
+     * @object froq\traits\OptionTrait
+     */
+    use OptionTrait;
+
+    /**
      * Levels.
      * @const int
      */
     public const NONE  = 0,  FAIL  = 2,
                  WARN  = 4,  INFO  = 8,
                  DEBUG = 16, ALL   = 30,
-                 ANY   = -1; // just to pass none (0)
+                 ANY   = -1; // Just to skip NONE (0).
 
     /**
-     * Log level.
-     * @var int
+     * Options default.
+     * @var array
      */
-    private $level = 0; // none
-
-    /**
-     * Directory.
-     * @var string
-     */
-    private $directory;
-
-    /**
-     * Directory checked.
-     * @var bool
-     */
-    private static $directoryChecked = false;
+    private static array $optionsDefault = [
+        'level'            => 0,    // None.
+        'file'             => null, // Will be set in log().
+        'directory'        => null,
+        'fileNameAppendix' => null,
+        'useLocalDate'     => true,
+    ];
 
     /**
      * Constructor.
-     * @param int         $level
-     * @param string|null $directory
+     * @param array|null $options
      */
-    public function __construct(int $level = 0, string $directory = null)
+    public function __construct(array $options = null)
     {
-        $this->level = $level;
-        $this->directory = $directory;
+        $options = array_merge(self::$optionsDefault, $options ?? []);
+
+        $this->setOptions($options);
     }
 
     /**
-     * Set level.
+     * Log.
      * @param  int $level
-     * @return void
+     * @param  any $message
+     * @throws froq\logger\LoggerException If error_log() fails.
+     * @return bool
      */
-    public function setLevel(int $level): void
+    public function log(int $level, $message): bool
     {
-        $this->level = $level;
+        // No log.
+        if (!$level || !($level & ((int) $this->options['level']))) {
+            return false;
+        }
+
+        ['directory' => $directory, 'fileNameAppendix' => $fileNameAppendix,
+         'useLocalDate' => $useLocalDate] = $this->options;
+
+        // Ensure log directory.
+        $this->checkDirectory($directory);
+
+        $messageType = 'LOG'; // @default.
+        $messageDate = $useLocalDate ? date('D, d M Y H:i:s O') : gmdate('D, d M Y H:i:s O');
+
+        switch ($level) {
+            case self::FAIL: $messageType = 'FAIL'; break;
+            case self::INFO: $messageType = 'INFO'; break;
+            case self::WARN: $messageType = 'WARN'; break;
+            case self::DEBUG: $messageType = 'DEBUG'; break;
+        }
+
+        // Handle exception, object, array messages.
+        if ($message instanceof Throwable) {
+            $message = (string) $message;
+        } elseif (is_array($message) || is_object($message)) {
+            $message = json_encode($message);
+        }
+
+        $message = sprintf('[%s] %s | %s%s', $messageType, $messageDate,
+            // Fix non-binary safe issue of error_log().
+            str_replace(chr(0), 'NU??', trim((string) $message)), "\n\n"
+        );
+
+        $fileName = $useLocalDate ? date('Y-m-d') : gmdate('Y-m-d');
+        $fileNameAppendix = $fileNameAppendix ?: '';
+
+        // Because permissions.
+        $messageFile = (PHP_SAPI != 'cli-server')
+            ? sprintf('%s/%s%s.log', $directory, $fileName, $fileNameAppendix)
+            : sprintf('%s/%s%s-cli-server.log', $directory, $fileName, $fileNameAppendix);
+
+        // Store file.
+        $this->options['file'] = $messageFile;
+
+        $ok =@ error_log($message, 3, $messageFile);
+        if (!$ok) {
+            throw new LoggerException(sprintf('Log failed, error[%s]', error()));
+        }
+
+        return true;
     }
 
     /**
-     * Get level.
-     * @return int
+     * Log any.
+     * @param  any $message
+     * @return bool
+     * @since  3.2
      */
-    public function getLevel(): int
+    public function logAny($message): bool
     {
-        return $this->level;
+        return $this->log(self::ANY, $message);
     }
 
     /**
-     * Set directory.
-     * @param  string $directory
-     * @return void
+     * Log fail.
+     * @param  any $message
+     * @return bool
      */
-    public function setDirectory(string $directory): void
+    public function logFail($message): bool
     {
-        $this->directory = $directory;
+        return $this->log(self::FAIL, $message);
+    }
+
+    /**
+     * Log warn.
+     * @param  any $message
+     * @return bool
+     */
+    public function logWarn($message): bool
+    {
+        return $this->log(self::WARN, $message);
+    }
+
+    /**
+     * Log info.
+     * @param  any $message
+     * @return bool
+     */
+    public function logInfo($message): bool
+    {
+        return $this->log(self::INFO, $message);
+    }
+
+    /**
+     * Log debug.
+     * @param  any $message
+     * @return bool
+     */
+    public function logDebug($message): bool
+    {
+        return $this->log(self::DEBUG, $message);
+    }
+
+    /**
+     * Get file.
+     * @return ?string
+     * @since  4.0
+     */
+    public function getFile(): ?string
+    {
+        return $this->getOption('file');
     }
 
     /**
@@ -108,152 +205,26 @@ final class Logger
      */
     public function getDirectory(): ?string
     {
-        return $this->directory;
+        return $this->getOption('directory');
     }
 
     /**
      * Check directory.
-     * @return bool
+     * @param  ?string $directory
+     * @return void
      * @throws froq\logger\LoggerException
      */
-    public function checkDirectory(): bool
+    private function checkDirectory(?string $directory): void
     {
-        if ($this->directory == null) {
+        if ($directory == null) {
             throw new LoggerException('Log directory is not defined yet');
         }
 
-        self::$directoryChecked = self::$directoryChecked ?: is_dir($this->directory);
-        if (!self::$directoryChecked) {
-            self::$directoryChecked =@ (bool) mkdir($this->directory, 0644, true);
-            if (self::$directoryChecked === false) {
-                throw new LoggerException(sprintf('Cannot make directory, error[%s]',
-                    error_get_last()['message'] ?? 'Unknown'));
+        if (!is_dir($directory)) {
+            $ok =@ mkdir($directory, 0644, true);
+            if (!$ok) {
+                throw new LoggerException(sprintf('Cannot make directory, error[%s]', error()));
             }
         }
-
-        return self::$directoryChecked;
-    }
-
-    /**
-     * Log.
-     * @param  int  $level
-     * @param  any  $message
-     * @param  bool $separate
-     * @throws froq\logger\LoggerException
-     * @return ?bool
-     */
-    public function log(int $level, $message, bool $separate = false): ?bool
-    {
-        // no log
-        if (!$level || !($level & $this->level)) {
-            return null;
-        }
-
-        // ensure log directory
-        $this->checkDirectory();
-
-        // prepare message prepend
-        $messageType = '';
-        switch ($level) {
-            case self::FAIL:
-                $messageType = 'FAIL'; break;
-            case self::INFO:
-                $messageType = 'INFO'; break;
-            case self::WARN:
-                $messageType = 'WARN'; break;
-            case self::DEBUG:
-                $messageType = 'DEBUG'; break;
-            default:
-                $messageType = 'LOG';
-        }
-
-        $messageDate = date('D, d M Y H:i:s O');
-
-        // handle exception, object, array messages
-        if ($message instanceof \Throwable) {
-            $message = sprintf("%s: '%s' in '%s:%s'.\n%s\n", get_class($message),
-                $message->getMessage(), $message->getFile(), $message->getLine(),
-                $message->getTraceAsString()
-            );
-        } elseif (is_array($message) || is_object($message)) {
-            $message = json_encode($message);
-        }
-
-        $message = sprintf('[%s] %s | %s%s', $messageType, $messageDate,
-            // fix non-binary safe issue of error_log()
-            str_replace(chr(0), 'NU??', trim((string) $message)),
-            // new lines
-            $separate ? "\n\n" : "\n"
-        );
-
-        $messageFile = sprintf('%s/%s.log', $this->directory, date('Y-m-d'));
-        // because permissions..
-        if (PHP_SAPI == 'cli-server') {
-            $messageFile = sprintf('%s/%s-cli-server.log', $this->directory, date('Y-m-d'));
-        }
-
-        $return = error_log($message, 3, $messageFile);
-        if (!$return) {
-            throw new LoggerException(sprintf('Log failed, error[%s]',
-                error_get_last()['message'] ?? 'Unknown'));
-        }
-
-        return $return;
-    }
-
-    /**
-     * Log any.
-     * @param  any  $message
-     * @param  bool $separate
-     * @return ?bool
-     * @since  3.2
-     */
-    public function logAny($message, bool $separate = false): ?bool
-    {
-        return $this->log(self::ANY, $message, $separate);
-    }
-
-    /**
-     * Log fail.
-     * @param  any  $message
-     * @param  bool $separate
-     * @return ?bool
-     */
-    public function logFail($message, bool $separate = false): ?bool
-    {
-        return $this->log(self::FAIL, $message, $separate);
-    }
-
-    /**
-     * Log warn.
-     * @param  any  $message
-     * @param  bool $separate
-     * @return ?bool
-     */
-    public function logWarn($message, bool $separate = false): ?bool
-    {
-        return $this->log(self::WARN, $message, $separate);
-    }
-
-    /**
-     * Log info.
-     * @param  any  $message
-     * @param  bool $separate
-     * @return ?bool
-     */
-    public function logInfo($message, bool $separate = false): ?bool
-    {
-        return $this->log(self::INFO, $message, $separate);
-    }
-
-    /**
-     * Log debug.
-     * @param  any  $message
-     * @param  bool $separate
-     * @return ?bool
-     */
-    public function logDebug($message, bool $separate = false): ?bool
-    {
-        return $this->log(self::DEBUG, $message, $separate);
     }
 }
