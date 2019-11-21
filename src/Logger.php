@@ -40,7 +40,7 @@ use Throwable;
 final class Logger
 {
     /**
-     * Options trait.
+     * Option trait.
      * @object froq\traits\OptionTrait
      */
     use OptionTrait;
