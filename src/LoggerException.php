@@ -26,12 +26,14 @@ declare(strict_types=1);
 
 namespace froq\logger;
 
+use froq\Exception;
+
 /**
- * Logger exception.
+ * Logger Exception.
  * @package froq\logger
  * @object  froq\logger\LoggerException
  * @author  Kerem Güneş <k-gun@mail.com>
  * @since   1.0
  */
-final class LoggerException extends \Exception
+final class LoggerException extends Exception
 {}
