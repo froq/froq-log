@@ -42,6 +42,7 @@ final class Logger
     /**
      * Option trait.
      * @object froq\traits\OptionTrait
+     * @since  4.0
      */
     use OptionTrait;
 
