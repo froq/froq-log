@@ -26,8 +26,8 @@ declare(strict_types=1);
 
 namespace froq\logger;
 
-use froq\logger\LoggerException;
 use froq\traits\OptionTrait;
+use froq\logger\LoggerException;
 use Throwable;
 
 /**
