@@ -50,10 +50,10 @@ final class Logger
      * Levels.
      * @const int
      */
-    public const NONE  = 0,  FAIL  = 2,
-                 WARN  = 4,  INFO  = 8,
-                 DEBUG = 16, ALL   = 30,
-                 ANY   = -1; // Just to skip NONE (0).
+    public const NONE  = 0,  FAIL = 2,
+                 WARN  = 4,  INFO = 8,
+                 DEBUG = 16, ALL  = 30,
+                 ANY   = -1; // Just to skip NONE(0).
 
     /**
      * Options default.
