@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace froq\logger;
 
-use froq\traits\OptionTrait;
+use froq\common\traits\OptionTrait;
 use froq\logger\LoggerException;
 use Throwable;
 
@@ -41,7 +41,8 @@ final class Logger
 {
     /**
      * Option trait.
-     * @see froq\traits\OptionTrait
+     *
+     * @see froq\common\traits\OptionTrait
      * @since 4.0
      */
     use OptionTrait;
