@@ -64,7 +64,7 @@ final class Logger
         'directory'        => null, // Must be given in constructor options.
         'file'             => null, // Will be set in write().
         'fileNameAppendix' => null,
-        'useLocalDate'     => true,
+        'useLocalDate'     => true
     ];
 
     /**
