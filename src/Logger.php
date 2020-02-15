@@ -61,8 +61,8 @@ final class Logger
      */
     private static array $optionsDefault = [
         'level'            => 0,    // None.
-        'file'             => null, // Will be set in write().
         'directory'        => null, // Must be given in constructor options.
+        'file'             => null, // Will be set in write().
         'fileNameAppendix' => null,
         'useLocalDate'     => true,
     ];
@@ -176,8 +176,7 @@ final class Logger
         if (!is_dir($directory)) {
             $ok =@ mkdir($directory, 0644, true);
             if (!$ok) {
-                throw new LoggerException(sprintf('Cannot make directory, error[%s]',
-                    error_get_last()['message'] ?? 'unknown'));
+                throw new LoggerException('Cannot make directory [error: %s]', ['@error']);
             }
         }
     }
@@ -204,8 +203,8 @@ final class Logger
         } elseif ($message instanceof Throwable) {
             $message = trim($message->__toString());
         } else {
-            throw new LoggerException(sprintf('Only string and Throwable messages are accepted, '.
-                '%s given', gettype($message)));
+            throw new LoggerException('Only string and Throwable messages are accepted, "%s" given',
+                [gettype($message)]);
         }
 
         ['directory' => $directory, 'fileNameAppendix' => $fileNameAppendix,
@@ -245,8 +244,7 @@ final class Logger
 
         $ok =@ error_log($log, 3, $logFile);
         if (!$ok) {
-            throw new LoggerException(sprintf('Log process failed (error: %s)',
-                error_get_last()['message'] ?? 'unknown'));
+            throw new LoggerException('Log process failed [error: %s]', ['@error']);
         }
 
         return true;
