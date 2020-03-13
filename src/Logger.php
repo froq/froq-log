@@ -50,9 +50,9 @@ final class Logger
      * Levels.
      * @const int
      */
-    public const NONE = 0, ALL   = 30, // ALL is sum of all levels.
-                 FAIL = 2, WARN  = 4,
-                 INFO = 8, DEBUG = 16;
+    public const NONE  = 0, ALL   = 30, // ALL is sum of all levels.
+                 ERROR = 2, WARN  = 4,
+                 INFO  = 8, DEBUG = 16;
 
     /**
      * Options default.
@@ -92,14 +92,14 @@ final class Logger
     }
 
     /**
-     * Logs failure messages.
+     * Logs error messages.
      *
      * @param  string|Throwable $message
      * @return bool
      */
-    public function logFail($message): bool
+    public function logError($message): bool
     {
-        return $this->write(self::FAIL, $message);
+        return $this->write(self::ERROR, $message);
     }
 
     /**
@@ -218,7 +218,7 @@ final class Logger
         $messageDate = $date('D, d M Y H:i:s O');
 
         switch ($level) {
-            case self::FAIL:  $messageType = 'FAIL';  break;
+            case self::ERROR: $messageType = 'ERROR'; break;
             case self::INFO:  $messageType = 'INFO';  break;
             case self::WARN:  $messageType = 'WARN';  break;
             case self::DEBUG: $messageType = 'DEBUG'; break;
