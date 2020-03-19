@@ -224,14 +224,15 @@ final class Logger
             case self::DEBUG: $messageType = 'DEBUG'; break;
         }
 
-        $fileName = $date('Y-m-d');
-        $fileNameAppendix = $fileNameAppendix ?: '';
-
         $log = sprintf("[%s] %s | %s\n\n", $messageType, $messageDate, $message);
+
         // Fix non-binary safe issue of error_log().
         if (strpos($log, "\0")) {
             $log = str_replace("\0", "\\0", $log);
         }
+
+        $fileName         = $date('Y-m-d');
+        $fileNameAppendix = $fileNameAppendix ?: '';
 
         // Because permissions.
         $logFile = (PHP_SAPI != 'cli-server')
