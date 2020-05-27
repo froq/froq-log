@@ -26,6 +26,10 @@ declare(strict_types=1);
 
 namespace froq\logger;
 
+use froq\common\traits\OptionTrait;
+use froq\logger\LoggerException;
+use Throwable;
+
 /**
  * Logger.
  * @package froq\logger
@@ -36,224 +40,213 @@ namespace froq\logger;
 final class Logger
 {
     /**
+     * Option trait.
+     * @see froq\common\traits\OptionTrait
+     * @since 4.0
+     */
+    use OptionTrait;
+
+    /**
      * Levels.
      * @const int
      */
-    public const NONE  = 0,  FAIL  = 2,
-                 WARN  = 4,  INFO  = 8,
-                 DEBUG = 16, ALL   = 30,
-                 ANY   = -1; // just to pass none (0)
+    public const NONE  = 0, ALL   = 30, // ALL is sum of all levels.
+                 ERROR = 2, WARN  = 4,
+                 INFO  = 8, DEBUG = 16;
 
     /**
-     * Log level.
-     * @var int
+     * Options default.
+     * @var array
      */
-    private $level = 0; // none
-
-    /**
-     * Directory.
-     * @var string
-     */
-    private $directory;
-
-    /**
-     * Directory checked.
-     * @var bool
-     */
-    private static $directoryChecked = false;
+    private static array $optionsDefault = [
+        'level'            => 0,    // None.
+        'directory'        => null, // Must be given in constructor options.
+        'file'             => null, // Will be set in write().
+        'fileNameAppendix' => null,
+        'useLocalDate'     => true
+    ];
 
     /**
      * Constructor.
-     * @param int         $level
-     * @param string|null $directory
+     *
+     * @param array|null $options
      */
-    public function __construct(int $level = 0, string $directory = null)
+    public function __construct(array $options = null)
     {
-        $this->level = $level;
-        $this->directory = $directory;
+        $options = array_merge(self::$optionsDefault, $options ?? []);
+
+        $this->setOptions($options);
     }
 
     /**
-     * Set level.
-     * @param  int $level
-     * @return void
+     * Logs any trivial message to the log file. This method can be used for skipping leveled
+     * log states.
+     *
+     * @param  string|Throwable $message
+     * @return bool
+     * @since  3.2, 4.0 Renamed to log() from logAny().
      */
-    public function setLevel(int $level): void
+    public function log($message): bool
     {
-        $this->level = $level;
+        return $this->write(-1, $message);
     }
 
     /**
-     * Get level.
-     * @return int
+     * Logs error messages.
+     *
+     * @param  string|Throwable $message
+     * @return bool
      */
-    public function getLevel(): int
+    public function logError($message): bool
     {
-        return $this->level;
+        return $this->write(self::ERROR, $message);
     }
 
     /**
-     * Set directory.
-     * @param  string $directory
-     * @return void
+     * Logs warning messages.
+     *
+     * @param  string|Throwable $message
+     * @return bool
      */
-    public function setDirectory(string $directory): void
+    public function logWarn($message): bool
     {
-        $this->directory = $directory;
+        return $this->write(self::WARN, $message);
     }
 
     /**
-     * Get directory.
+     * Logs informational messages.
+     *
+     * @param  string|Throwable $message
+     * @return bool
+     */
+    public function logInfo($message): bool
+    {
+        return $this->write(self::INFO, $message);
+    }
+
+    /**
+     * Logs debug messages.
+     *
+     * @param  string|Throwable $message
+     * @return bool
+     */
+    public function logDebug($message): bool
+    {
+        return $this->write(self::DEBUG, $message);
+    }
+
+    /**
+     * Gets current log file. Note that log file is set in `write()` method and this method returns
+     * null if any `log*()` method not yet called.
+     *
+     * @return ?string
+     * @since  4.0
+     */
+    public function getFile(): ?string
+    {
+        return $this->getOption('file');
+    }
+
+    /**
+     * Gets log directory that given in constructor options.
+     *
      * @return ?string
      */
     public function getDirectory(): ?string
     {
-        return $this->directory;
+        return $this->getOption('directory');
     }
 
     /**
-     * Check directory.
-     * @return bool
+     * Checks directory to ensure directory is created/exists, throws `LoggerException` if no
+     * directory option given yet or cannot create that directory.
+     *
+     * @param  string $directory
+     * @return void
      * @throws froq\logger\LoggerException
      */
-    public function checkDirectory(): bool
+    private function checkDirectory(string $directory): void
     {
-        if ($this->directory == null) {
-            throw new LoggerException('Log directory is not defined yet');
+        if ($directory == '') {
+            throw new LoggerException('Log directory is not defined yet, it must be given in '.
+                'constructor options or calling setOption() before log*() calls');
         }
 
-        self::$directoryChecked = self::$directoryChecked ?: is_dir($this->directory);
-        if (!self::$directoryChecked) {
-            self::$directoryChecked =@ (bool) mkdir($this->directory, 0644, true);
-            if (self::$directoryChecked === false) {
-                throw new LoggerException(sprintf('Cannot make directory, error[%s]',
-                    error_get_last()['message'] ?? 'Unknown'));
+        if (!is_dir($directory)) {
+            $ok =@ mkdir($directory, 0644, true);
+            if (!$ok) {
+                throw new LoggerException('Cannot make directory [error: %s]', ['@error']);
             }
         }
-
-        return self::$directoryChecked;
     }
 
     /**
-     * Log.
-     * @param  int  $level
-     * @param  any  $message
-     * @param  bool $separate
+     * Writes any trivial or leveled message to the log file, throws if no valid message given
+     * (`string|Throwable`) or internal `error_log()` function fails.
+     *
+     * @param  int              $level
+     * @param  string|Throwable $message
      * @throws froq\logger\LoggerException
-     * @return ?bool
+     * @return bool
+     * @since  4.0 Renamed to write() from log(), made private.
      */
-    public function log(int $level, $message, bool $separate = false): ?bool
+    private function write(int $level, $message): bool
     {
-        // no log
-        if (!$level || !($level & $this->level)) {
-            return null;
+        // No log.
+        if (!$level || !($level & intval($this->options['level']))) {
+            return false;
         }
 
-        // ensure log directory
-        $this->checkDirectory();
+        if (is_string($message)) {
+            $message = trim($message);
+        } elseif ($message instanceof Throwable) {
+            $message = trim($message->__toString());
+        } else {
+            throw new LoggerException('Only string and Throwable messages are accepted, "%s" given',
+                [gettype($message)]);
+        }
 
-        // prepare message prepend
-        $messageType = '';
+        ['directory' => $directory, 'fileNameAppendix' => $fileNameAppendix,
+         'useLocalDate' => $useLocalDate] = $this->options;
+
+        $this->checkDirectory((string) $directory);
+
+        // Choose date function by option.
+        $date = $useLocalDate ? 'date' : 'gmdate';
+
+        $messageType = 'LOG'; // @default.
+        $messageDate = $date('D, d M Y H:i:s O');
+
         switch ($level) {
-            case self::FAIL:
-                $messageType = 'FAIL'; break;
-            case self::INFO:
-                $messageType = 'INFO'; break;
-            case self::WARN:
-                $messageType = 'WARN'; break;
-            case self::DEBUG:
-                $messageType = 'DEBUG'; break;
-            default:
-                $messageType = 'LOG';
+            case self::ERROR: $messageType = 'ERROR'; break;
+            case self::INFO:  $messageType = 'INFO';  break;
+            case self::WARN:  $messageType = 'WARN';  break;
+            case self::DEBUG: $messageType = 'DEBUG'; break;
         }
 
-        $messageDate = date('D, d M Y H:i:s O');
+        $log = sprintf("[%s] %s | %s\n\n", $messageType, $messageDate, $message);
 
-        // handle exception, object, array messages
-        if ($message instanceof \Throwable) {
-            $message = sprintf("%s: '%s' in '%s:%s'.\n%s\n", get_class($message),
-                $message->getMessage(), $message->getFile(), $message->getLine(),
-                $message->getTraceAsString()
-            );
-        } elseif (is_array($message) || is_object($message)) {
-            $message = json_encode($message);
+        // Fix non-binary safe issue of error_log().
+        if (strpos($log, "\0")) {
+            $log = str_replace("\0", "\\0", $log);
         }
 
-        $message = sprintf('[%s] %s | %s%s', $messageType, $messageDate,
-            // fix non-binary safe issue of error_log()
-            str_replace(chr(0), 'NU??', trim((string) $message)),
-            // new lines
-            $separate ? "\n\n" : "\n"
-        );
+        $fileName         = $date('Y-m-d');
+        $fileNameAppendix = $fileNameAppendix ?: '';
 
-        $messageFile = sprintf('%s/%s.log', $this->directory, date('Y-m-d'));
-        // because permissions..
-        if (PHP_SAPI == 'cli-server') {
-            $messageFile = sprintf('%s/%s-cli-server.log', $this->directory, date('Y-m-d'));
+        // Because permissions.
+        $logFile = (PHP_SAPI != 'cli-server')
+            ? sprintf('%s/%s%s.log', $directory, $fileName, $fileNameAppendix)
+            : sprintf('%s/%s%s-cli-server.log', $directory, $fileName, $fileNameAppendix);
+
+        // Store file as option for getFile() method.
+        $this->options['file'] = $logFile;
+
+        $ok =@ error_log($log, 3, $logFile);
+        if (!$ok) {
+            throw new LoggerException('Log process failed [error: %s]', ['@error']);
         }
 
-        $return = error_log($message, 3, $messageFile);
-        if (!$return) {
-            throw new LoggerException(sprintf('Log failed, error[%s]',
-                error_get_last()['message'] ?? 'Unknown'));
-        }
-
-        return $return;
-    }
-
-    /**
-     * Log any.
-     * @param  any  $message
-     * @param  bool $separate
-     * @return ?bool
-     * @since  3.2
-     */
-    public function logAny($message, bool $separate = false): ?bool
-    {
-        return $this->log(self::ANY, $message, $separate);
-    }
-
-    /**
-     * Log fail.
-     * @param  any  $message
-     * @param  bool $separate
-     * @return ?bool
-     */
-    public function logFail($message, bool $separate = false): ?bool
-    {
-        return $this->log(self::FAIL, $message, $separate);
-    }
-
-    /**
-     * Log warn.
-     * @param  any  $message
-     * @param  bool $separate
-     * @return ?bool
-     */
-    public function logWarn($message, bool $separate = false): ?bool
-    {
-        return $this->log(self::WARN, $message, $separate);
-    }
-
-    /**
-     * Log info.
-     * @param  any  $message
-     * @param  bool $separate
-     * @return ?bool
-     */
-    public function logInfo($message, bool $separate = false): ?bool
-    {
-        return $this->log(self::INFO, $message, $separate);
-    }
-
-    /**
-     * Log debug.
-     * @param  any  $message
-     * @param  bool $separate
-     * @return ?bool
-     */
-    public function logDebug($message, bool $separate = false): ?bool
-    {
-        return $this->log(self::DEBUG, $message, $separate);
+        return true;
     }
 }
