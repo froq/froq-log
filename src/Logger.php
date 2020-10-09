@@ -59,11 +59,13 @@ final class Logger
      * @var array
      */
     private static array $optionsDefault = [
-        'level'            => 0,    // None.
-        'directory'        => null, // Must be given in constructor options.
-        'file'             => null, // Will be set in write().
-        'fileNameAppendix' => null,
-        'useLocalDate'     => true
+        'level'           => 0,    // None.
+        'directory'       => null, // Must be given in constructor options.
+        'file'            => null, // File with full path.
+        'fileName'        => null, // Be used in write() or created.
+        'fileNameTag'     => null, // Be appended to file name.
+        'useGmtDate'      => false,
+        'usePrettyFormat' => true,
     ];
 
     /**
@@ -167,6 +169,7 @@ final class Logger
      */
     private function checkDirectory(string $directory): void
     {
+        $directory = trim($directory);
         if ($directory == '') {
             throw new LoggerException('Log directory is not defined yet, it must be given in '.
                 'constructor options or calling setOption() before log*() calls');
@@ -181,8 +184,8 @@ final class Logger
     }
 
     /**
-     * Writes any trivial or leveled message to the log file, throws if no valid message given
-     * (`string|Throwable`) or internal `error_log()` function fails.
+     * Writes any trivial or leveled message to the log file, throws a `LoggerException` if
+     * no valid message given (`string|Throwable`) or internal `error_log()` function fails.
      *
      * @param  int              $level
      * @param  string|Throwable $message
@@ -200,53 +203,85 @@ final class Logger
         if (is_string($message)) {
             $message = trim($message);
         } elseif ($message instanceof Throwable) {
-            $message = trim($message->__toString());
+            if ($this->options['usePrettyFormat']) {
+                $message = self::prettify($message);
+                $message = $message['string'] ."\nTrace:\n". join("\n", $message['trace']);
+            } else {
+                $message = trim($message);
+            }
         } else {
-            throw new LoggerException('Only string and Throwable messages are accepted, "%s" given',
+            throw new LoggerException('Only string|Throwable messages are accepted, "%s" given',
                 [gettype($message)]);
         }
 
-        ['directory' => $directory, 'fileNameAppendix' => $fileNameAppendix,
-         'useLocalDate' => $useLocalDate] = $this->options;
+        ['directory' => $directory, 'useGmtDate' => $useGmtDate,
+         'file' => $file, 'fileName' => $fileName, 'fileNameTag' => $fileNameTag] = $this->options;
 
-        $this->checkDirectory((string) $directory);
+        // Use file's directory if given.
+        $directory = strval($directory ?? ($file ? dirname($file) : null));
+
+        $this->checkDirectory($directory);
 
         // Choose date function by option.
-        $date = $useLocalDate ? 'date' : 'gmdate';
+        $dater = $useGmtDate ? 'gmdate' : 'date';
 
-        $messageType = 'LOG'; // @default.
-        $messageDate = $date('D, d M Y H:i:s O');
+        $type = 'LOG'; // @default
+        $date = $dater('D, d M Y H:i:s O');
 
         switch ($level) {
-            case self::ERROR: $messageType = 'ERROR'; break;
-            case self::INFO:  $messageType = 'INFO';  break;
-            case self::WARN:  $messageType = 'WARN';  break;
-            case self::DEBUG: $messageType = 'DEBUG'; break;
+            case self::ERROR: $type = 'ERROR'; break;
+            case self::INFO:  $type = 'INFO';  break;
+            case self::WARN:  $type = 'WARN';  break;
+            case self::DEBUG: $type = 'DEBUG'; break;
         }
 
-        $log = sprintf("[%s] %s | %s\n\n", $messageType, $messageDate, $message);
+        $log = sprintf("[%s] %s | %s\n\n", $type, $date, $message);
 
-        // Fix non-binary safe issue of error_log().
+        // Fix non-binary-safe issue of error_log().
         if (strpos($log, "\0")) {
             $log = str_replace("\0", "\\0", $log);
         }
 
-        $fileName         = $date('Y-m-d');
-        $fileNameAppendix = $fileNameAppendix ?: '';
+        // Prepare if not given.
+        if ($file == null) {
+            $fileName = $fileName ? basename($fileName, '.log') : $dater('Y-m-d');
+            $fileNameTag = $fileNameTag ? '-'. ltrim($fileNameTag, '-') : '';
 
-        // Because permissions.
-        $logFile = (PHP_SAPI != 'cli-server')
-            ? sprintf('%s/%s%s.log', $directory, $fileName, $fileNameAppendix)
-            : sprintf('%s/%s%s-cli-server.log', $directory, $fileName, $fileNameAppendix);
+            // Because permissions.
+            $file = (PHP_SAPI != 'cli-server')
+                  ? sprintf('%s/%s%s.log', $directory, $fileName, $fileNameTag)
+                  : sprintf('%s/%s%s-cli-server.log', $directory, $fileName, $fileNameTag);
 
-        // Store file as option for getFile() method.
-        $this->options['file'] = $logFile;
+            // Store file as option for getFile() method.
+            $this->options['file'] = $file;
+        }
 
-        $ok =@ error_log($log, 3, $logFile);
+
+        $ok =@ error_log($log, 3, $file);
         if (!$ok) {
             throw new LoggerException('Log process failed [error: %s]', ['@error']);
         }
 
         return true;
+    }
+
+    /**
+     * Prettify.
+     * @param  Throwable $e
+     * @return array
+     * @since  4.1
+     */
+    public static function prettify(Throwable $e): array
+    {
+        // Dot all those PHP's ugly stuff..
+        $clean = fn($s) => str_replace(['\\', '::', '->'], '.', $s);
+
+        return [
+            'string' => sprintf(
+                '%s(%s): %s in %s:%s', $clean(get_class($e)),
+                $e->getCode(), $e->getMessage(), $e->getFile(), $e->getLine()
+            ),
+            'trace' => array_map($clean, explode("\n", $e->getTraceAsString()))
+        ];
     }
 }
