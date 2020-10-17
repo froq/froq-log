@@ -278,7 +278,7 @@ final class Logger
 
         return [
             'string' => sprintf(
-                '%s(%s): %s in %s:%s', $clean(get_class($e)),
+                '%s(%s): %s at %s:%s', $clean(get_class($e)),
                 $e->getCode(), $e->getMessage(), $e->getFile(), $e->getLine()
             ),
             'trace' => array_map($clean, explode("\n", $e->getTraceAsString()))
