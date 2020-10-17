@@ -196,14 +196,17 @@ final class Logger
     private function write(int $level, $message): bool
     {
         // No log.
-        if (!$level || !($level & intval($this->options['level']))) {
+        if (!$level || !($level & ((int) $this->options['level']))) {
             return false;
         }
+
+        ['directory' => $directory, 'file' => $file, 'fileName' => $fileName, 'fileTag' => $fileTag,
+          'useGmtDate' => $useGmtDate, 'usePrettyFormat' => $usePrettyFormat] = $this->options;
 
         if (is_string($message)) {
             $message = trim($message);
         } elseif ($message instanceof Throwable) {
-            if ($this->options['usePrettyFormat']) {
+            if ($usePrettyFormat) {
                 $message = self::prettify($message);
                 $message = $message['string'] ."\nTrace:\n". join("\n", $message['trace']);
             } else {
@@ -213,9 +216,6 @@ final class Logger
             throw new LoggerException('Only string|Throwable messages are accepted, "%s" given',
                 [gettype($message)]);
         }
-
-        ['directory' => $directory, 'useGmtDate' => $useGmtDate,
-         'file' => $file, 'fileName' => $fileName, 'fileTag' => $fileTag] = $this->options;
 
         // Use file's directory if given.
         $directory = strval($directory ?? ($file ? dirname($file) : null));
