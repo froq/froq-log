@@ -63,7 +63,7 @@ final class Logger
         'directory'       => null, // Must be given in constructor options.
         'file'            => null, // File with full path.
         'fileName'        => null, // Be used in write() or created.
-        'fileNameTag'     => null, // Be appended to file name.
+        'fileTag'         => null, // Be appended to file name.
         'useGmtDate'      => false,
         'usePrettyFormat' => true,
     ];
@@ -215,7 +215,7 @@ final class Logger
         }
 
         ['directory' => $directory, 'useGmtDate' => $useGmtDate,
-         'file' => $file, 'fileName' => $fileName, 'fileNameTag' => $fileNameTag] = $this->options;
+         'file' => $file, 'fileName' => $fileName, 'fileTag' => $fileTag] = $this->options;
 
         // Use file's directory if given.
         $directory = strval($directory ?? ($file ? dirname($file) : null));
@@ -245,12 +245,12 @@ final class Logger
         // Prepare if not given.
         if ($file == null) {
             $fileName = $fileName ? basename($fileName, '.log') : $dater('Y-m-d');
-            $fileNameTag = $fileNameTag ? '-'. ltrim($fileNameTag, '-') : '';
+            $fileTag  = $fileTag ? ('-'. ltrim($fileTag, '-')) : '';
 
             // Because permissions.
             $file = (PHP_SAPI != 'cli-server')
-                  ? sprintf('%s/%s%s.log', $directory, $fileName, $fileNameTag)
-                  : sprintf('%s/%s%s-cli-server.log', $directory, $fileName, $fileNameTag);
+                  ? sprintf('%s/%s%s.log', $directory, $fileName, $fileTag)
+                  : sprintf('%s/%s%s-cli-server.log', $directory, $fileName, $fileTag);
 
             // Store file as option for getFile() method.
             $this->options['file'] = $file;
