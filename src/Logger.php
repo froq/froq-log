@@ -61,11 +61,13 @@ final class Logger
     private static array $optionsDefault = [
         'level'           => 0,    // None.
         'directory'       => null, // Must be given in constructor options.
+        'tag'             => null, // Be used in write() as file name appendix.
         'file'            => null, // File with full path.
         'fileName'        => null, // Be used in write() or created.
-        'fileTag'         => null, // Be appended to file name.
-        'useGmtDate'      => false,
-        'usePrettyFormat' => true,
+        'utc'             => true, // Whether to use UTC date or local date.
+        'pretty'          => true,
+        'rotate'          => false,
+        'dater'           => null, // Internal option, here just for cache/speed.
     ];
 
     /**
@@ -76,6 +78,16 @@ final class Logger
     public function __construct(array $options = null)
     {
         $options = array_merge(self::$optionsDefault, $options ?? []);
+        if ($options['tag']) {
+            $options['tag'] = '-'. trim($options['tag'], '-');
+        }
+
+        $timezone = 'UTC';
+        if (!$options['utc']) {
+            $timezone = date_default_timezone_get();
+        }
+        // Set dater as readonly.
+        $options['dater'] = [date_create('', timezone_open($timezone)), 'format'];
 
         $this->setOptions($options);
     }
@@ -176,7 +188,7 @@ final class Logger
         }
 
         if (!is_dir($directory)) {
-            $ok =@ mkdir($directory, 0755, true);
+            $ok = mkdir($directory, 0755, true);
             if (!$ok) {
                 throw new LoggerException('Cannot make directory [error: %s]', ['@error']);
             }
@@ -200,13 +212,13 @@ final class Logger
             return false;
         }
 
-        ['directory' => $directory, 'file' => $file, 'fileName' => $fileName, 'fileTag' => $fileTag,
-          'useGmtDate' => $useGmtDate, 'usePrettyFormat' => $usePrettyFormat] = $this->options;
+        ['directory' => $directory, 'tag' => $tag, 'dater' => $dater,
+          'pretty' => $pretty, 'file' => $file, 'fileName' => $fileName] = $this->options;
 
         if (is_string($message)) {
             $message = trim($message);
         } elseif ($message instanceof Throwable) {
-            if ($usePrettyFormat) {
+            if ($pretty) {
                 $message = self::prettify($message);
                 $message = $message['string'] ."\nTrace:\n". join("\n", $message['trace']);
             } else {
@@ -218,15 +230,26 @@ final class Logger
         }
 
         // Use file's directory if given.
-        $directory = strval($directory ?? ($file ? dirname($file) : null));
+        $directory ??= $file ? dirname($file) : null;
 
-        $this->checkDirectory($directory);
+        $this->checkDirectory((string) $directory);
 
-        // Choose date function by option.
-        $dater = $useGmtDate ? 'gmdate' : 'date';
+        // Prepare if not given.
+        if ($file == null) {
+            $fileName ??= $dater('Y-m-d');
+
+            // Because permissions.
+            $file = (PHP_SAPI != 'cli-server')
+                  ? sprintf('%s/%s%s.log', $directory, $fileName, $tag)
+                  : sprintf('%s/%s%s-cli-server.log', $directory, $fileName, $tag);
+
+            // Store as option to speed up write process.
+            $this->options['file'] = $file;
+            $this->options['fileName'] = $fileName;
+        }
 
         $type = 'LOG'; // @default
-        $date = $dater('D, d M Y H:i:s O');
+        $date = $dater('D, d M Y H:i:s.u P');
 
         switch ($level) {
             case self::ERROR: $type = 'ERROR'; break;
@@ -242,24 +265,21 @@ final class Logger
             $log = str_replace("\0", "\\0", $log);
         }
 
-        // Prepare if not given.
-        if ($file == null) {
-            $fileName = $fileName ? basename($fileName, '.log') : $dater('Y-m-d');
-            $fileTag  = $fileTag ? ('-'. ltrim($fileTag, '-')) : '';
-
-            // Because permissions.
-            $file = (PHP_SAPI != 'cli-server')
-                  ? sprintf('%s/%s%s.log', $directory, $fileName, $fileTag)
-                  : sprintf('%s/%s%s-cli-server.log', $directory, $fileName, $fileTag);
-
-            // Store file as option for getFile() method.
-            $this->options['file'] = $file;
-        }
-
-
-        $ok =@ error_log($log, 3, $file);
+        $ok = error_log($log, 3, $file);
         if (!$ok) {
             throw new LoggerException('Log process failed [error: %s]', ['@error']);
+        }
+
+        // Mimic "logrotate" process.
+        if ($this->options['rotate']) {
+            foreach (glob($directory .'/*.log') as $gfile) {
+                if ($gfile != $file) {
+                    $ok = copy($gfile, 'compress.zlib://'. $gfile .'.gz') && unlink($gfile);
+                    if (!$ok) {
+                        throw new LoggerException('Log rotate failed [error: %s]', ['@error']);
+                    }
+                }
+            }
         }
 
         return true;
