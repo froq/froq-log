@@ -28,6 +28,7 @@ namespace froq\logger;
 
 use froq\common\traits\OptionTrait;
 use froq\logger\LoggerException;
+use froq\util\Util;
 use Throwable;
 
 /**
@@ -249,16 +250,20 @@ final class Logger
         }
 
         $type = 'LOG'; // @default
-        $date = $dater('D, d M Y H:i:s.u P');
-
         switch ($level) {
             case self::ERROR: $type = 'ERROR'; break;
-            case self::INFO:  $type = 'INFO';  break;
-            case self::WARN:  $type = 'WARN';  break;
+            case self::INFO: $type = 'INFO'; break;
+            case self::WARN: $type = 'WARN'; break;
             case self::DEBUG: $type = 'DEBUG'; break;
         }
 
-        $log = sprintf("[%s] %s | %s\n\n", $type, $date, $message);
+        // Eg: [ERROR] Sat, 31 Oct 2020 02:00:34.377367 +00:00 | 127.0.0.1 | Error(0): ..
+        $log = sprintf("[%s] %s | %s | %s\n\n",
+            $type,                              // Log type.
+            $dater('D, d M Y H:i:s.u P'),       // Log date.
+            Util::getClientIp(),                // Log IP.
+            $message                            // Log message.
+        );
 
         // Fix non-binary-safe issue of error_log().
         if (strpos($log, "\0")) {
