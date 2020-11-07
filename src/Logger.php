@@ -29,7 +29,7 @@ namespace froq\logger;
 use froq\common\traits\OptionTrait;
 use froq\logger\LoggerException;
 use froq\util\Util;
-use Throwable;
+use Throwable, Datetime;
 
 /**
  * Logger.
@@ -56,6 +56,13 @@ final class Logger
                  INFO  = 8, DEBUG = 16;
 
     /**
+     * Date.
+     * @var Datetime
+     * @since 4.2
+     */
+    private static Datetime $date;
+
+    /**
      * Options default.
      * @var array
      */
@@ -66,9 +73,10 @@ final class Logger
         'file'            => null, // File with full path.
         'fileName'        => null, // Be used in write() or created.
         'utc'             => true, // Whether to use UTC date or local date.
-        'pretty'          => true,
+        'json'            => false,
+        'pretty'          => false,
         'rotate'          => false,
-        'dater'           => null, // Internal option, here just for cache/speed.
+        'dateFormat'      => null,
     ];
 
     /**
@@ -83,12 +91,10 @@ final class Logger
             $options['tag'] = '-'. trim($options['tag'], '-');
         }
 
-        $timezone = 'UTC';
-        if (!$options['utc']) {
-            $timezone = date_default_timezone_get();
-        }
-        // Set dater as readonly.
-        $options['dater'] = [date_create('', timezone_open($timezone)), 'format'];
+        // Set date.
+        self::$date = date_create('', timezone_open(
+            $options['utc'] ? 'UTC' : date_default_timezone_get()
+        ));
 
         $this->setOptions($options);
     }
@@ -173,6 +179,47 @@ final class Logger
     }
 
     /**
+     * Prepare.
+     * @param  Throwable $e
+     * @param  bool      $pretty
+     * @param  bool      $verbose
+     * @return array
+     * @since  4.1, 4.2 Replaced with prettify().
+     */
+    public static function prepare(Throwable $e, bool $pretty, bool $verbose): array
+    {
+        static $clean; // Dot all those PHP's ugly stuff..
+        $clean ??= fn($s) => str_replace(['\\', '::', '->'], '.', $s);
+
+        $type = get_class($e);
+        if ($pretty) {
+            $type = $clean($type);
+        }
+
+        [$code, $file, $line, $message]
+            = [$e->getCode(), $e->getFile(), $e->getLine(), $e->getMessage()];
+
+        if (!$verbose) {
+            return [
+                'string' => sprintf('%s(%s): %s at %s:%s',
+                    $type, $code, $message, $file, $line),
+                'trace' => array_map(fn($s) => $clean($s),
+                    explode("\n", $e->getTraceAsString()))
+            ];
+        } else {
+            return [
+                'type' => $type, 'code' => $code,
+                'file' => $file, 'line' => $line,
+                'message' => $message,
+                'string' => sprintf('%s(%s): %s at %s:%s',
+                    $type, $code, $message, $file, $line),
+                'trace' => array_map(fn($s) => preg_replace('~^#\d+ (.+)~', '\1', $clean($s)),
+                    explode("\n", $e->getTraceAsString()))
+            ];
+        }
+    }
+
+    /**
      * Checks directory to ensure directory is created/exists, throws `LoggerException` if no
      * directory option given yet or cannot create that directory.
      *
@@ -208,22 +255,22 @@ final class Logger
      */
     private function write(int $level, $message): bool
     {
-        // No log.
+        // No log..
         if (!$level || !($level & ((int) $this->options['level']))) {
             return false;
         }
 
-        ['directory' => $directory, 'tag' => $tag, 'dater' => $dater,
-          'pretty' => $pretty, 'file' => $file, 'fileName' => $fileName] = $this->options;
+        ['directory' => $directory, 'tag' => $tag, 'file' => $file, 'fileName' => $fileName,
+          'json' => $json, 'pretty' => $pretty, 'dateFormat' => $dateFormat] = $this->options;
 
         if (is_string($message)) {
             $message = trim($message);
         } elseif ($message instanceof Throwable) {
-            if ($pretty) {
-                $message = self::prettify($message);
-                $message = $message['string'] ."\nTrace:\n". join("\n", $message['trace']);
+            if ($pretty || $json) {
+                $message = self::prepare($message, $pretty, $json);
+                $message = $json ? $message : $message['string'] ."\nTrace:\n". join("\n", $message['trace']);
             } else {
-                $message = trim($message);
+                $message = trim((string) $message);
             }
         } else {
             throw new LoggerException('Only string|Throwable messages are accepted, "%s" given',
@@ -237,7 +284,7 @@ final class Logger
 
         // Prepare if not given.
         if ($file == null) {
-            $fileName ??= $dater('Y-m-d');
+            $fileName ??= self::$date->format('Y-m-d');
 
             // Because permissions.
             $file = (PHP_SAPI != 'cli-server')
@@ -249,21 +296,29 @@ final class Logger
             $this->options['fileName'] = $fileName;
         }
 
-        $type = 'LOG'; // @default
         switch ($level) {
             case self::ERROR: $type = 'ERROR'; break;
-            case self::INFO: $type = 'INFO'; break;
-            case self::WARN: $type = 'WARN'; break;
+            case self::INFO:  $type = 'INFO';  break;
+            case self::WARN:  $type = 'WARN';  break;
             case self::DEBUG: $type = 'DEBUG'; break;
+                     default: $type = 'LOG';
         }
 
-        // Eg: [ERROR] Sat, 31 Oct 2020 02:00:34.377367 +00:00 | 127.0.0.1 | Error(0): ..
-        $log = sprintf("[%s] %s | %s | %s\n\n",
-            $type,                              // Log type.
-            $dater('D, d M Y H:i:s.u P'),       // Log date.
-            Util::getClientIp(),                // Log IP.
-            $message                            // Log message.
-        );
+        // Use default date format if not given.
+        $dateFormat = $this->getOption('dateFormat', 'D, d M Y H:i:s.u P');
+
+        if (!$json) {
+            // Eg: [ERROR] Sat, 31 Oct 2020 02:00:34.377367 +00:00 | 127.0.0.1 | Error(0): ..
+            $log = sprintf("[%s] %s | %s | %s",
+                $type, self::$date->format($dateFormat),
+                Util::getClientIp(), $message) ."\n\n";
+        } else {
+            // Eg: {"type":"ERROR", "date":"Sat, 07 Nov 2020 05:43:13.080835 +00:00", "ip":"127...", "message": {"type": ..
+            $log = json_encode([
+                'type' => $type, 'date' => self::$date->format($dateFormat),
+                'ip' => Util::getClientIp(), 'message' => $message,
+            ], JSON_UNESCAPED_SLASHES) ."\n\n";
+        }
 
         // Fix non-binary-safe issue of error_log().
         if (strpos($log, "\0")) {
@@ -288,25 +343,5 @@ final class Logger
         }
 
         return true;
-    }
-
-    /**
-     * Prettify.
-     * @param  Throwable $e
-     * @return array
-     * @since  4.1
-     */
-    public static function prettify(Throwable $e): array
-    {
-        // Dot all those PHP's ugly stuff..
-        $clean = fn($s) => str_replace(['\\', '::', '->'], '.', $s);
-
-        return [
-            'string' => sprintf(
-                '%s(%s): %s at %s:%s', $clean(get_class($e)),
-                $e->getCode(), $e->getMessage(), $e->getFile(), $e->getLine()
-            ),
-            'trace' => array_map($clean, explode("\n", $e->getTraceAsString()))
-        ];
     }
 }
