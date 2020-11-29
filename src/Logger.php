@@ -220,7 +220,7 @@ final class Logger
         if (!is_dir($directory)) {
             $ok = mkdir($directory, 0755, true);
             if (!$ok) {
-                throw new LoggerException('Cannot make directory [error: %s]', ['@error']);
+                throw new LoggerException('Cannot make directory [error: %s]', '@error');
             }
         }
     }
@@ -309,7 +309,7 @@ final class Logger
 
         $ok = error_log($log, 3, $file);
         if (!$ok) {
-            throw new LoggerException('Log process failed [error: %s]', ['@error']);
+            throw new LoggerException('Log process failed [error: %s]', '@error');
         }
 
         // Mimic "logrotate" process.
@@ -318,7 +318,7 @@ final class Logger
                 if ($gfile != $file) {
                     $ok = copy($gfile, 'compress.zlib://'. $gfile .'.gz') && unlink($gfile);
                     if (!$ok) {
-                        throw new LoggerException('Log rotate failed [error: %s]', ['@error']);
+                        throw new LoggerException('Log rotate failed [error: %s]', '@error');
                     }
                 }
             }
