@@ -269,8 +269,8 @@ final class Logger
 
             // Because permissions.
             $file = (PHP_SAPI != 'cli-server')
-                  ? sprintf('%s/%s%s.log', $directory, $fileName, $tag)
-                  : sprintf('%s/%s%s-cli-server.log', $directory, $fileName, $tag);
+                ? sprintf('%s/%s%s.log', $directory, $fileName, $tag)
+                : sprintf('%s/%s%s-cli-server.log', $directory, $fileName, $tag);
 
             // Store as option to speed up write process.
             $this->options['file'] = $file;
