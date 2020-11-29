@@ -17,5 +17,5 @@ use froq\common\Exception;
  * @author  Kerem Güneş <k-gun@mail.com>
  * @since   1.0
  */
-final class LoggerException extends Exception
+class LoggerException extends Exception
 {}
