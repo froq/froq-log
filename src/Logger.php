@@ -70,7 +70,7 @@ final class Logger
     {
         $options = array_merge(self::$optionsDefault, $options ?? []);
         if ($options['tag']) {
-            $options['tag'] = '-'. trim($options['tag'], '-');
+            $options['tag'] = '-' . trim($options['tag'], '-');
         }
 
         // Set date.
@@ -178,8 +178,7 @@ final class Logger
             $type = $clean($type);
         }
 
-        [$code, $file, $line, $message]
-            = [$e->getCode(), $e->getFile(), $e->getLine(), $e->getMessage()];
+        [$code, $file, $line, $message] = [$e->getCode(), $e->getFile(), $e->getLine(), $e->getMessage()];
 
         if (!$verbose) {
             return [
@@ -250,13 +249,13 @@ final class Logger
         } elseif ($message instanceof Throwable) {
             if ($pretty || $json) {
                 $message = self::prepare($message, $pretty, $json);
-                $message = $json ? $message : $message['string'] ."\nTrace:\n". join("\n", $message['trace']);
+                $message = $json ? $message : $message['string'] . "\nTrace:\n" . join("\n", $message['trace']);
             } else {
                 $message = trim((string) $message);
             }
         } else {
-            throw new LoggerException('Only string|Throwable messages are accepted, "%s" given',
-                [gettype($message)]);
+            throw new LoggerException("Only string|Throwable messages are accepted, '%s' given",
+                gettype($message));
         }
 
         // Use file's directory if given.
@@ -293,13 +292,13 @@ final class Logger
             // Eg: [ERROR] Sat, 31 Oct 2020 02:00:34.377367 +00:00 | 127.0.0.1 | Error(0): ..
             $log = sprintf("[%s] %s | %s | %s",
                 $type, self::$date->format($dateFormat),
-                Util::getClientIp(), $message) ."\n\n";
+                Util::getClientIp(), $message) . "\n\n";
         } else {
             // Eg: {"type":"ERROR", "date":"Sat, 07 Nov 2020 05:43:13.080835 +00:00", "ip":"127...", "message": {"type": ..
             $log = json_encode([
                 'type' => $type, 'date' => self::$date->format($dateFormat),
                 'ip' => Util::getClientIp(), 'message' => $message,
-            ], JSON_UNESCAPED_SLASHES) ."\n\n";
+            ], JSON_UNESCAPED_SLASHES) . "\n\n";
         }
 
         // Fix non-binary-safe issue of error_log().
