@@ -87,7 +87,7 @@ final class Logger
      *
      * @param  string|Throwable $message
      * @return bool
-     * @since  3.2, 4.0 Renamed to log() from logAny().
+     * @since  3.2, 4.0 Renamed from logAny().
      */
     public function log($message): bool
     {
