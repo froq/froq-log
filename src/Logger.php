@@ -55,6 +55,7 @@ final class Logger
         'file'            => null, // File with full path.
         'fileName'        => null, // Be used in write() or created.
         'utc'             => true, // Whether to use UTC date or local date.
+        'separate'        => true, // Used for separating new lines.
         'json'            => false,
         'pretty'          => false,
         'rotate'          => false,
@@ -86,56 +87,61 @@ final class Logger
      * log states.
      *
      * @param  string|Throwable $message
+     * @bool   bool             $separate
      * @return bool
      * @since  3.2, 4.0 Renamed from logAny().
      */
-    public function log($message): bool
+    public function log($message, bool $separate = true): bool
     {
-        return $this->write(-1, $message);
+        return $this->write(-1, $message, $separate);
     }
 
     /**
      * Logs error messages.
      *
      * @param  string|Throwable $message
+     * @bool   bool             $separate
      * @return bool
      */
-    public function logError($message): bool
+    public function logError($message, bool $separate = true): bool
     {
-        return $this->write(self::ERROR, $message);
+        return $this->write(self::ERROR, $message, $separate);
     }
 
     /**
      * Logs warning messages.
      *
      * @param  string|Throwable $message
+     * @bool   bool             $separate
      * @return bool
      */
-    public function logWarn($message): bool
+    public function logWarn($message, bool $separate = true): bool
     {
-        return $this->write(self::WARN, $message);
+        return $this->write(self::WARN, $message, $separate);
     }
 
     /**
      * Logs informational messages.
      *
      * @param  string|Throwable $message
+     * @bool   bool             $separate
      * @return bool
      */
-    public function logInfo($message): bool
+    public function logInfo($message, bool $separate = true): bool
     {
-        return $this->write(self::INFO, $message);
+        return $this->write(self::INFO, $message, $separate);
     }
 
     /**
      * Logs debug messages.
      *
      * @param  string|Throwable $message
+     * @bool   bool             $separate
      * @return bool
      */
-    public function logDebug($message): bool
+    public function logDebug($message, bool $separate = true): bool
     {
-        return $this->write(self::DEBUG, $message);
+        return $this->write(self::DEBUG, $message, $separate);
     }
 
     /**
@@ -161,7 +167,8 @@ final class Logger
     }
 
     /**
-     * Prepare.
+     * Prepares a Throwable message.
+     *
      * @param  Throwable $e
      * @param  bool      $pretty
      * @param  bool      $verbose
@@ -226,15 +233,16 @@ final class Logger
 
     /**
      * Writes any trivial or leveled message to the log file, throws a `LoggerException` if
-     * no valid message given (`string|Throwable`) or internal `error_log()` function fails.
+     * no valid message given or internal `error_log()` function fails.
      *
      * @param  int              $level
      * @param  string|Throwable $message
+     * @bool   bool             $separate
      * @throws froq\logger\LoggerException
      * @return bool
      * @since  4.0 Renamed to write() from log(), made private.
      */
-    private function write(int $level, $message): bool
+    private function write(int $level, $message, bool $separate = true): bool
     {
         // No log..
         if (!$level || !($level & ((int) $this->options['level']))) {
@@ -292,13 +300,15 @@ final class Logger
             // Eg: [ERROR] Sat, 31 Oct 2020 02:00:34.377367 +00:00 | 127.0.0.1 | Error(0): ..
             $log = sprintf("[%s] %s | %s | %s",
                 $type, self::$date->format($dateFormat),
-                Util::getClientIp(), $message) . "\n\n";
+                Util::getClientIp(), $message) . "\n";
+            $separate && $log .= "\n";
         } else {
             // Eg: {"type":"ERROR", "date":"Sat, 07 Nov 2020 05:43:13.080835 +00:00", "ip":"127...", "message": {"type": ..
             $log = json_encode([
                 'type' => $type, 'date' => self::$date->format($dateFormat),
                 'ip' => Util::getClientIp(), 'message' => $message,
-            ], JSON_UNESCAPED_SLASHES) . "\n\n";
+            ], JSON_UNESCAPED_SLASHES) . "\n";
+            $separate && $log .= "\n";
         }
 
         // Fix non-binary-safe issue of error_log().
