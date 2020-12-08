@@ -20,7 +20,7 @@ use Throwable, Datetime;
  * @author  Kerem Güneş <k-gun@mail.com>
  * @since   1.0
  */
-final class Logger
+class Logger
 {
     /**
      * Option trait.
@@ -37,19 +37,18 @@ final class Logger
                  ERROR = 2, WARN  = 4,
                  INFO  = 8, DEBUG = 16;
 
-    /**
-     * Date.
-     * @var Datetime
-     * @since 4.2
-     */
-    private static Datetime $date;
+    /** @var int */
+    protected int $level;
 
-    /**
-     * Options default.
-     * @var array
-     */
+    /** @var Datetime @since 4.2 */
+    protected static Datetime $date;
+
+    /** @var Datetime @since 5.0 */
+    protected static string $dateFormat = 'D, d M Y H:i:s.u P';
+
+    /** @var array */
     private static array $optionsDefault = [
-        'level'           => 0,    // None.
+        'level'           => 0,    // None. Moved as property at v/5.0
         'directory'       => null, // Must be given in constructor options.
         'tag'             => null, // Be used in write() as file name appendix.
         'file'            => null, // File with full path.
@@ -70,6 +69,7 @@ final class Logger
     public function __construct(array $options = null)
     {
         $options = array_merge(self::$optionsDefault, $options ?? []);
+
         if ($options['tag']) {
             $options['tag'] = '-' . trim($options['tag'], '-');
         }
@@ -79,95 +79,107 @@ final class Logger
             $options['utc'] ? 'UTC' : date_default_timezone_get()
         ));
 
+        $this->level = (int) $options['level'];
+
         $this->setOptions($options);
     }
 
     /**
-     * Logs any trivial message to the log file. This method can be used for skipping leveled
-     * log states.
+     * Get level.
+     *
+     * @return int
+     */
+    public final function getLevel(): int
+    {
+        return $this->level;
+    }
+
+    /**
+     * Get current log file.
+     *
+     * @note   Log file will be set in write() method, so this method returns null if any log*()
+     *         method not yet called those run write() method.
+     * @return string|null
+     * @since  4.0
+     */
+    public final function getFile(): string|null
+    {
+        return $this->getOption('file');
+    }
+
+    /**
+     * Get log directory that given in options.
+     *
+     * @return string|null
+     */
+    public final function getDirectory(): string|null
+    {
+        return $this->getOption('directory');
+    }
+
+    /**
+     * Log a trivial message (this method may be used for skipping leveled log states).
      *
      * @param  string|Throwable $message
      * @bool   bool             $separate
      * @return bool
      * @since  3.2, 4.0 Renamed from logAny().
      */
-    public function log($message, bool $separate = true): bool
+    public final function log(string|Throwable $message, bool $separate = true): bool
     {
         return $this->write(-1, $message, $separate);
     }
 
     /**
-     * Logs error messages.
+     * Log an error message.
      *
      * @param  string|Throwable $message
      * @bool   bool             $separate
      * @return bool
      */
-    public function logError($message, bool $separate = true): bool
+    public final function logError(string|Throwable $message, bool $separate = true): bool
     {
         return $this->write(self::ERROR, $message, $separate);
     }
 
     /**
-     * Logs warning messages.
+     * Log a warning message.
      *
      * @param  string|Throwable $message
      * @bool   bool             $separate
      * @return bool
      */
-    public function logWarn($message, bool $separate = true): bool
+    public final function logWarn(string|Throwable $message, bool $separate = true): bool
     {
         return $this->write(self::WARN, $message, $separate);
     }
 
     /**
-     * Logs informational messages.
+     * Log an informational message.
      *
      * @param  string|Throwable $message
      * @bool   bool             $separate
      * @return bool
      */
-    public function logInfo($message, bool $separate = true): bool
+    public final function logInfo(string|Throwable $message, bool $separate = true): bool
     {
         return $this->write(self::INFO, $message, $separate);
     }
 
     /**
-     * Logs debug messages.
+     * Log a debug message.
      *
      * @param  string|Throwable $message
      * @bool   bool             $separate
      * @return bool
      */
-    public function logDebug($message, bool $separate = true): bool
+    public final function logDebug(string|Throwable $message, bool $separate = true): bool
     {
         return $this->write(self::DEBUG, $message, $separate);
     }
 
     /**
-     * Gets current log file. Note that log file is set in `write()` method and this method returns
-     * null if any `log*()` method not yet called.
-     *
-     * @return ?string
-     * @since  4.0
-     */
-    public function getFile(): ?string
-    {
-        return $this->getOption('file');
-    }
-
-    /**
-     * Gets log directory that given in constructor options.
-     *
-     * @return ?string
-     */
-    public function getDirectory(): ?string
-    {
-        return $this->getOption('directory');
-    }
-
-    /**
-     * Prepares a Throwable message.
+     * Prepare a Throwable message.
      *
      * @param  Throwable $e
      * @param  bool      $pretty
@@ -180,7 +192,7 @@ final class Logger
         static $clean; // Dot all those PHP's ugly stuff..
         $clean ??= fn($s) => str_replace(['\\', '::', '->'], '.', $s);
 
-        $type = get_class($e);
+        $type = get_class_name($e, false);
         if ($pretty) {
             $type = $clean($type);
         }
@@ -189,18 +201,15 @@ final class Logger
 
         if (!$verbose) {
             return [
-                'string' => sprintf('%s(%s): %s at %s:%s',
-                    $type, $code, $message, $file, $line),
-                'trace' => array_map(fn($s) => $clean($s),
-                    explode("\n", $e->getTraceAsString()))
+                'string' => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
+                'trace' => array_map(fn($s) => $clean($s), explode("\n", $e->getTraceAsString()))
             ];
         } else {
             return [
                 'type' => $type, 'code' => $code,
                 'file' => $file, 'line' => $line,
                 'message' => $message,
-                'string' => sprintf('%s(%s): %s at %s:%s',
-                    $type, $code, $message, $file, $line),
+                'string' => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
                 'trace' => array_map(fn($s) => preg_replace('~^#\d+ (.+)~', '\1', $clean($s)),
                     explode("\n", $e->getTraceAsString()))
             ];
@@ -208,32 +217,29 @@ final class Logger
     }
 
     /**
-     * Checks directory to ensure directory is created/exists, throws `LoggerException` if no
-     * directory option given yet or cannot create that directory.
+     * Check directory to ensure directory is created/exists, throw LoggerException if no
+     * directory option given yet or cannot create that directory when not exists.
      *
      * @param  string $directory
      * @return void
      * @throws froq\logger\LoggerException
      */
-    private function checkDirectory(string $directory): void
+    protected function directoryCheck(string $directory): void
     {
         $directory = trim($directory);
         if ($directory == '') {
-            throw new LoggerException('Log directory is not defined yet, it must be given in '.
-                'constructor options or calling setOption() before log*() calls');
+            throw new LoggerException('Log directory is not defined yet, it must be given in '
+                . 'constructor options or calling setOption() before log*() calls');
         }
 
-        if (!is_dir($directory)) {
-            $ok = mkdir($directory, 0755, true);
-            if (!$ok) {
-                throw new LoggerException('Cannot make directory [error: %s]', '@error');
-            }
+        if (!is_dir($directory) && !mkdir($directory, 0755, true)) {
+            throw new LoggerException('Cannot create log directory %s [error: %s]', [$directory, '@error']);
         }
     }
 
     /**
-     * Writes any trivial or leveled message to the log file, throws a `LoggerException` if
-     * no valid message given or internal `error_log()` function fails.
+     * Write a trivial or leveled message to current log file, throw a LoggerException if error_log()
+     * or "logrotate" process fails.
      *
      * @param  int              $level
      * @param  string|Throwable $message
@@ -242,10 +248,10 @@ final class Logger
      * @return bool
      * @since  4.0 Renamed to write() from log(), made private.
      */
-    private function write(int $level, $message, bool $separate = true): bool
+    protected function write(int $level, string|Throwable $message, bool $separate = true): bool
     {
-        // No log..
-        if (!$level || !($level & ((int) $this->options['level']))) {
+        // No log?
+        if (!$level || !($level & $this->level)) {
             return false;
         }
 
@@ -254,22 +260,19 @@ final class Logger
 
         if (is_string($message)) {
             $message = trim($message);
-        } elseif ($message instanceof Throwable) {
+        } else {
             if ($pretty || $json) {
-                $message = self::prepare($message, $pretty, $json);
+                $message = self::prepare($message, !!$pretty, !!$json);
                 $message = $json ? $message : $message['string'] . "\nTrace:\n" . join("\n", $message['trace']);
             } else {
                 $message = trim((string) $message);
             }
-        } else {
-            throw new LoggerException("Only string|Throwable messages are accepted, '%s' given",
-                gettype($message));
         }
 
         // Use file's directory if given.
         $directory ??= $file ? dirname($file) : null;
 
-        $this->checkDirectory((string) $directory);
+        $this->directoryCheck((string) $directory);
 
         // Prepare if not given.
         if ($file == null) {
@@ -285,54 +288,61 @@ final class Logger
             $this->options['fileName'] = $fileName;
         }
 
-        switch ($level) {
-            case self::ERROR: $type = 'ERROR'; break;
-            case self::INFO:  $type = 'INFO';  break;
-            case self::WARN:  $type = 'WARN';  break;
-            case self::DEBUG: $type = 'DEBUG'; break;
-                     default: $type = 'LOG';
-        }
+        $type = match ($level) {
+            self::ERROR => 'ERROR', self::WARN  => 'WARN',
+            self::INFO  => 'INFO',  self::DEBUG => 'DEBUG',
+                default => 'LOG'
+        };
 
         // Use default date format if not given.
-        $dateFormat = $this->getOption('dateFormat', 'D, d M Y H:i:s.u P');
+        $dateFormat = $this->getOption('dateFormat', self::$dateFormat);
 
         if (!$json) {
             // Eg: [ERROR] Sat, 31 Oct 2020 02:00:34.377367 +00:00 | 127.0.0.1 | Error(0): ..
             $log = sprintf("[%s] %s | %s | %s",
                 $type, self::$date->format($dateFormat),
-                Util::getClientIp(), $message) . "\n";
+                Util::getClientIp() ?: '-', $message) . "\n";
             $separate && $log .= "\n";
         } else {
             // Eg: {"type":"ERROR", "date":"Sat, 07 Nov 2020 05:43:13.080835 +00:00", "ip":"127...", "message": {"type": ..
             $log = json_encode([
                 'type' => $type, 'date' => self::$date->format($dateFormat),
-                'ip' => Util::getClientIp(), 'message' => $message,
+                'ip' => Util::getClientIp() ?: '-', 'message' => $message,
             ], JSON_UNESCAPED_SLASHES) . "\n";
             $separate && $log .= "\n";
         }
 
+        $this->commit($file, $log);
+        $this->rotate($file);
+
+        return true;
+    }
+
+    /** @internal */
+    private function commit(string $file, string $log): void
+    {
         // Fix non-binary-safe issue of error_log().
-        if (strpos($log, "\0")) {
+        if (str_contains($log, "\0")) {
             $log = str_replace("\0", "\\0", $log);
         }
 
-        $ok = error_log($log, 3, $file);
-        if (!$ok) {
-            throw new LoggerException('Log process failed [error: %s]', '@error');
-        }
+        error_log($log, 3, $file)
+            || throw new LoggerException('Log process failed [error: %s]', '@error');
+    }
 
+    /** @internal */
+    private function rotate(string $file): void
+    {
         // Mimic "logrotate" process.
         if ($this->options['rotate']) {
-            foreach (glob($directory .'/*.log') as $gfile) {
+            $glob = $this->options['directory'] . '/*.log';
+            foreach (glob($glob) as $gfile) {
                 if ($gfile != $file) {
-                    $ok = copy($gfile, 'compress.zlib://'. $gfile .'.gz') && unlink($gfile);
-                    if (!$ok) {
-                        throw new LoggerException('Log rotate failed [error: %s]', '@error');
-                    }
+                    $gzfile = 'compress.zlib://' . $gfile . '.gz';
+                    (copy($gfile, $gzfile) && unlink($gfile))
+                        || throw new LoggerException('Log rotate failed [error: %s]', '@error');
                 }
             }
         }
-
-        return true;
     }
 }
