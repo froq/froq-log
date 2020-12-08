@@ -68,20 +68,18 @@ class Logger
      */
     public function __construct(array $options = null)
     {
-        $options = array_merge(self::$optionsDefault, $options ?? []);
+        $this->setOptions($options, self::$optionsDefault);
 
-        if ($options['tag']) {
-            $options['tag'] = '-' . trim($options['tag'], '-');
+        if ($this->options['tag']) {
+            $this->options['tag'] = '-' . trim($this->options['tag'], '-');
         }
 
         // Set date.
         self::$date = date_create('', timezone_open(
-            $options['utc'] ? 'UTC' : date_default_timezone_get()
+            $this->options['utc'] ? 'UTC' : date_default_timezone_get()
         ));
 
-        $this->level = (int) $options['level'];
-
-        $this->setOptions($options);
+        $this->level = (int) $this->options['level'];
     }
 
     /**
