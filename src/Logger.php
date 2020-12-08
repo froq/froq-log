@@ -197,7 +197,8 @@ class Logger
             $type = $clean($type);
         }
 
-        [$code, $file, $line, $message] = [$e->getCode(), $e->getFile(), $e->getLine(), $e->getMessage()];
+        [$code, $file, $line, $message]
+            = [$e->getCode(), $e->getFile(), $e->getLine(), $e->getMessage()];
 
         if (!$verbose) {
             return [
