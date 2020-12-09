@@ -70,22 +70,38 @@ class Logger
     {
         $this->setOptions($options, self::$optionsDefault);
 
-        if ($this->options['tag']) {
-            $this->options['tag'] = '-' . trim($this->options['tag'], '-');
-        }
+        [$level, $file, $tag, $utc] = $this->getOptions(['level', 'file', 'tag', 'utc']);
+
+        $this->setLevel((int) $level);
+
+        $file && $this->setOption('file', $file);
+        $tag && $this->setOption('tag', ('-'. trim($tag, '-')));
 
         // Set date.
         self::$date = date_create('', timezone_open(
-            $this->options['utc'] ? 'UTC' : date_default_timezone_get()
+            $utc ? 'UTC' : date_default_timezone_get()
         ));
-
-        $this->level = (int) $this->options['level'];
     }
 
     /**
-     * Get level.
+     * Set log level.
+     *
+     * @param  int $level
+     * @return self
+     * @since  5.0
+     */
+    public final function setLevel(int $level): self
+    {
+        $this->level = $level;
+
+        return $this;
+    }
+
+    /**
+     * Get log level.
      *
      * @return int
+     * @since  5.0
      */
     public final function getLevel(): int
     {
@@ -98,7 +114,6 @@ class Logger
      * @note   Log file will be set in write() method, so this method returns null if any log*()
      *         method not yet called those run write() method.
      * @return string|null
-     * @since  4.0
      */
     public final function getFile(): string|null
     {
@@ -106,7 +121,7 @@ class Logger
     }
 
     /**
-     * Get log directory that given in options.
+     * Get current log directory that given in options.
      *
      * @return string|null
      */
@@ -254,8 +269,9 @@ class Logger
             return false;
         }
 
-        ['directory' => $directory, 'tag' => $tag, 'file' => $file, 'fileName' => $fileName,
-          'json' => $json, 'pretty' => $pretty, 'dateFormat' => $dateFormat] = $this->options;
+        [$directory, $file, $fileName, $tag, $json, $pretty, $dateFormat] = $this->getOptions(
+            ['directory', 'file', 'fileName', 'tag', 'json', 'pretty', 'dateFormat']
+        );
 
         if (is_string($message)) {
             $message = trim($message);
