@@ -207,7 +207,7 @@ class Logger
         static $clean; // Dot all those PHP's ugly stuff..
         $clean ??= fn($s) => str_replace(['\\', '::', '->'], '.', $s);
 
-        $type = get_class_name($e, false);
+        $type = get_class($e);
         if ($pretty) {
             $type = $clean($type);
         }
