@@ -24,6 +24,7 @@ class Logger
 {
     /**
      * Option trait.
+     *
      * @see froq\common\traits\OptionTrait
      * @since 4.0
      */
@@ -31,11 +32,12 @@ class Logger
 
     /**
      * Levels.
+     *
      * @const int
      */
-    public const NONE  = 0, ALL   = 30, // ALL is sum of all levels.
-                 ERROR = 2, WARN  = 4,
-                 INFO  = 8, DEBUG = 16;
+    public const NONE  = 0, ALL   = 15, // Sum of all.
+                 ERROR = 1, WARN  = 2,
+                 INFO  = 4, DEBUG = 8;
 
     /** @var int */
     protected int $level;
