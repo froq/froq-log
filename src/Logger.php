@@ -209,23 +209,20 @@ class Logger
             $type = $clean($type);
         }
 
-        [$code, $file, $line, $message]
-            = [$e->getCode(), $e->getFile(), $e->getLine(), $e->getMessage()];
+        [$code, $file, $line, $message] = [$e->getCode(), $e->getFile(), $e->getLine(), $e->getMessage()];
 
         if (!$verbose) {
             return [
-                'string' => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
-                'trace' => array_map(fn($s) => $clean($s), explode("\n", $e->getTraceAsString()))
-            ];
+                'string'  => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
+                'trace'   => array_map(fn($s) => $clean($s), explode("\n", $e->getTraceAsString()))];
         } else {
             return [
-                'type' => $type, 'code' => $code,
-                'file' => $file, 'line' => $line,
+                'type'    => $type, 'code' => $code,
+                'file'    => $file, 'line' => $line,
                 'message' => $message,
-                'string' => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
-                'trace' => array_map(fn($s) => preg_replace('~^#\d+ (.+)~', '\1', $clean($s)),
-                    explode("\n", $e->getTraceAsString()))
-            ];
+                'string'  => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
+                'trace'   => array_map(fn($s) => preg_replace('~^#\d+ (.+)~', '\1', $clean($s)),
+                    explode("\n", $e->getTraceAsString()))];
         }
     }
 
@@ -241,8 +238,8 @@ class Logger
     {
         $directory = trim($directory);
         if ($directory == '') {
-            throw new LoggerException('Log directory is not defined yet, it must be given in '
-                . 'constructor options or calling setOption() before log*() calls');
+            throw new LoggerException('Log directory is not defined yet, it must be given in'
+                . ' constructor options or calling setOption() before log*() calls');
         }
 
         if (!is_dir($directory) && !mkdir($directory, 0755, true)) {
@@ -352,8 +349,7 @@ class Logger
             $glob = $this->options['directory'] . '/*.log';
             foreach (glob($glob) as $gfile) {
                 if ($gfile != $file) {
-                    $gzfile = 'compress.zlib://' . $gfile . '.gz';
-                    (copy($gfile, $gzfile) && unlink($gfile))
+                    (copy($gfile, 'compress.zlib://' . $gfile . '.gz') && unlink($gfile))
                         || throw new LoggerException('Log rotate failed [error: %s]', '@error');
                 }
             }
