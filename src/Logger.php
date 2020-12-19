@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace froq\logger;
 
 use froq\logger\LoggerException;
-use froq\common\traits\OptionTrait;
+use froq\common\trait\OptionTrait;
 use froq\util\Util;
 use Throwable, Datetime;
 
@@ -23,16 +23,13 @@ use Throwable, Datetime;
 class Logger
 {
     /**
-     * Option trait.
-     *
-     * @see froq\common\traits\OptionTrait
+     * @see froq\common\trait\OptionTrait
      * @since 4.0
      */
     use OptionTrait;
 
     /**
      * Levels.
-     *
      * @const int
      */
     public const NONE  = 0, ALL   = 15, // Sum of all.
