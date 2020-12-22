@@ -74,7 +74,7 @@ class Logger
         $this->setLevel((int) $level);
 
         $file && $this->setOption('file', $file);
-        $tag && $this->setOption('tag', ('-'. trim($tag, '-')));
+        $tag  && $this->setOption('tag', ('-'. trim($tag, '-')));
 
         // Set date.
         self::$date = date_create('', timezone_open(
@@ -227,8 +227,8 @@ class Logger
     }
 
     /**
-     * Check directory to ensure directory is created/exists, throw LoggerException if no
-     * directory option given yet or cannot create that directory when not exists.
+     * Check directory to ensure directory is created/exists, throw LoggerException if no directory option
+     * given yet or cannot create that directory when not exists.
      *
      * @param  string $directory
      * @return void
@@ -248,8 +248,8 @@ class Logger
     }
 
     /**
-     * Write a trivial or leveled message to current log file, throw a LoggerException if error_log()
-     * or "logrotate" process fails.
+     * Write a trivial or leveled message to current log file, throw a LoggerException if error_log() or
+     * "logrotate" process fails.
      *
      * @param  int              $level
      * @param  string|Throwable $message
