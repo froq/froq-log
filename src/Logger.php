@@ -10,7 +10,7 @@ namespace froq\logger;
 use froq\logger\LoggerException;
 use froq\common\trait\OptionTrait;
 use froq\util\Util;
-use Throwable, Datetime;
+use Throwable, DateTime;
 
 /**
  * Logger.
@@ -39,10 +39,10 @@ class Logger
     /** @var int @since 5.0 */
     protected int $level;
 
-    /** @var Datetime @since 4.2 */
-    protected static Datetime $date;
+    /** @var DateTime @since 4.2 */
+    protected static DateTime $date;
 
-    /** @var Datetime @since 5.0 */
+    /** @var string @since 5.0 */
     protected static string $dateFormat = 'D, d M Y H:i:s.u P';
 
     /** @var array */
@@ -68,6 +68,11 @@ class Logger
     public function __construct(array $options = null)
     {
         $this->setOptions($options, self::$optionsDefault);
+
+        // Use default log directory when available.
+        if (!$this->options['directory'] && defined('APP_DIR')) {
+             $this->options['directory'] = APP_DIR . '/tmp/log';
+        }
 
         [$level, $file, $tag, $utc] = $this->getOptions(['level', 'file', 'tag', 'utc']);
 
