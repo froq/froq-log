@@ -36,7 +36,7 @@ class Logger
                  ERROR = 1, WARN  = 2,
                  INFO  = 4, DEBUG = 8;
 
-    /** @var int */
+    /** @var int @since 5.0 */
     protected int $level;
 
     /** @var Datetime @since 4.2 */
@@ -47,7 +47,7 @@ class Logger
 
     /** @var array */
     private static array $optionsDefault = [
-        'level'           => 0,    // None. Moved as property at v/5.0
+        'level'           => 15,   // All. Moved as property at v/5.0
         'directory'       => null, // Must be given in constructor options.
         'tag'             => null, // Be used in write() as file name appendix.
         'file'            => null, // File with full path.
