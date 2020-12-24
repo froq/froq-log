@@ -26,13 +26,15 @@ class Logger
      * @see froq\common\trait\OptionTrait
      * @since 4.0
      */
-    use OptionTrait;
+    use OptionTrait {
+        setOptions as private _setOptions;
+    }
 
     /**
      * Levels.
      * @const int
      */
-    public const NONE  = 0, ALL   = 15, // Sum of all.
+    public const NONE  = 0, ALL   = -1,
                  ERROR = 1, WARN  = 2,
                  INFO  = 4, DEBUG = 8;
 
@@ -47,7 +49,7 @@ class Logger
 
     /** @var array */
     private static array $optionsDefault = [
-        'level'           => 15,   // All. Moved as property at v/5.0
+        'level'           => -1,   // All. Moved as property in v/5.0.
         'directory'       => null, // Must be given in constructor options.
         'tag'             => null, // Be used in write() as file name appendix.
         'file'            => null, // File with full path.
@@ -85,6 +87,23 @@ class Logger
         self::$date = date_create('', timezone_open(
             $utc ? 'UTC' : date_default_timezone_get()
         ));
+    }
+
+    /**
+     * Set options.
+     *
+     * @param  array      $options
+     * @param  array|null $optionsDefault
+     * @return self
+     * @since  5.0
+     */
+    public final function setOptions(array $options, array $optionsDefault = null): self
+    {
+        if (isset($options['level'])) {
+            $this->setLevel((int) $options['level']);
+        }
+
+        return $this->_setOptions($options, $optionsDefault);
     }
 
     /**
@@ -300,7 +319,7 @@ class Logger
                 : sprintf('%s/%s%s-cli-server.log', $directory, $fileName, $tag);
 
             // Store as option to speed up write process.
-            $this->options['file'] = $file;
+            $this->options['file']     = $file;
             $this->options['fileName'] = $fileName;
         }
 
