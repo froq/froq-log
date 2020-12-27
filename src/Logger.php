@@ -73,7 +73,7 @@ class Logger
 
         // Use default log directory when available.
         if (!$this->options['directory'] && defined('APP_DIR')) {
-             $this->options['directory'] = APP_DIR . '/tmp/log';
+             $this->options['directory'] = APP_DIR . '/var/log';
         }
 
         [$level, $file, $tag, $utc] = $this->getOptions(['level', 'file', 'tag', 'utc']);
