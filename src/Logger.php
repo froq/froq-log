@@ -163,7 +163,7 @@ class Logger
      */
     public final function log(string|Throwable $message, bool $separate = true): bool
     {
-        return $this->write(-1, $message, $separate);
+        return $this->write(-1, null, $message, $separate);
     }
 
     /**
@@ -175,7 +175,7 @@ class Logger
      */
     public final function logError(string|Throwable $message, bool $separate = true): bool
     {
-        return $this->write(self::ERROR, $message, $separate);
+        return $this->write(self::ERROR, null, $message, $separate);
     }
 
     /**
@@ -187,7 +187,7 @@ class Logger
      */
     public final function logWarn(string|Throwable $message, bool $separate = true): bool
     {
-        return $this->write(self::WARN, $message, $separate);
+        return $this->write(self::WARN, null, $message, $separate);
     }
 
     /**
@@ -199,7 +199,7 @@ class Logger
      */
     public final function logInfo(string|Throwable $message, bool $separate = true): bool
     {
-        return $this->write(self::INFO, $message, $separate);
+        return $this->write(self::INFO, null, $message, $separate);
     }
 
     /**
@@ -211,7 +211,7 @@ class Logger
      */
     public final function logDebug(string|Throwable $message, bool $separate = true): bool
     {
-        return $this->write(self::DEBUG, $message, $separate);
+        return $this->write(self::DEBUG, null, $message, $separate);
     }
 
     /**
@@ -276,13 +276,14 @@ class Logger
      * "logrotate" process fails.
      *
      * @param  int              $level
+     * @param  string|null      $type
      * @param  string|Throwable $message
      * @bool   bool             $separate
      * @throws froq\logger\LoggerException
      * @return bool
      * @since  4.0 Renamed to write() from log(), made private.
      */
-    protected function write(int $level, string|Throwable $message, bool $separate = true): bool
+    protected function write(int $level, string|null $type, string|Throwable $message, bool $separate = true): bool
     {
         // No log?
         if (!$level || !($level & $this->level)) {
@@ -323,10 +324,11 @@ class Logger
             $this->options['fileName'] = $fileName;
         }
 
+        // Allowed override via write() calls from extender classes.
         $type = match ($level) {
             self::ERROR => 'ERROR', self::WARN  => 'WARN',
             self::INFO  => 'INFO',  self::DEBUG => 'DEBUG',
-                default => 'LOG'
+                default => $type ?: 'LOG'
         };
 
         // Use default date format if not given.
