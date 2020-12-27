@@ -325,10 +325,10 @@ class Logger
         }
 
         // Allowed override via write() calls from extender classes.
-        $type = match ($level) {
+        $type = $type ?: match ($level) {
             self::ERROR => 'ERROR', self::WARN  => 'WARN',
             self::INFO  => 'INFO',  self::DEBUG => 'DEBUG',
-                default => $type ?: 'LOG'
+                default => 'LOG'
         };
 
         // Use default date format if not given.
