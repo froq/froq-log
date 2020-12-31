@@ -223,14 +223,14 @@ class Logger
      * @return array
      * @since  4.1, 4.2 Replaced with prettify().
      */
-    public static function prepare(Throwable $e, bool $pretty, bool $verbose): array
+    public static function prepare(Throwable $e, bool $pretty, bool $verbose = false): array
     {
         static $clean; // Dot all those PHP's ugly stuff..
-        $clean ??= fn($s) => str_replace(['\\', '::', '->'], '.', $s);
+        $clean ??= fn($s, $p) => $p ? str_replace(['\\', '::', '->'], '.', $s) : $s;
 
         $type = get_class($e);
         if ($pretty) {
-            $type = $clean($type);
+            $type = $clean($type, true);
         }
 
         [$code, $file, $line, $message] = [$e->getCode(), $e->getFile(), $e->getLine(), $e->getMessage()];
@@ -238,14 +238,14 @@ class Logger
         if (!$verbose) {
             return [
                 'string'  => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
-                'trace'   => array_map(fn($s) => $clean($s), explode("\n", $e->getTraceAsString()))];
+                'trace'   => array_map(fn($s) => $clean($s, $pretty), explode("\n", $e->getTraceAsString()))];
         } else {
             return [
                 'type'    => $type, 'code' => $code,
                 'file'    => $file, 'line' => $line,
                 'message' => $message,
                 'string'  => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
-                'trace'   => array_map(fn($s) => preg_replace('~^#\d+ (.+)~', '\1', $clean($s)),
+                'trace'   => array_map(fn($s) => preg_replace('~^#\d+ (.+)~', '\1', $clean($s, $pretty)),
                     explode("\n", $e->getTraceAsString()))];
         }
     }
@@ -301,7 +301,9 @@ class Logger
                 $message = self::prepare($message, !!$pretty, !!$json);
                 $message = $json ? $message : $message['string'] . "\nTrace:\n" . join("\n", $message['trace']);
             } else {
-                $message = trim((string) $message);
+                // $message = trim((string) $message);
+                $message = self::prepare($message, !!$pretty);
+                $message = $message['string'] . "\nTrace:\n" . join("\n", $message['trace']);
             }
         }
 
