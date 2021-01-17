@@ -47,6 +47,9 @@ class Logger
     /** @var string @since 5.0 */
     protected static string $dateFormat = 'D, d M Y H:i:s.u P';
 
+    /** @var string @since 5.0 */
+    protected string $last = '';
+
     /** @var array */
     private static array $optionsDefault = [
         'level'           => -1,   // All. Moved as property in v/5.0.
@@ -341,6 +344,7 @@ class Logger
             $log = sprintf("[%s] %s | %s | %s",
                 $type, self::$date->format($dateFormat),
                 Util::getClientIp() ?: '-', $message) . "\n";
+
             $separate && $log .= "\n";
         } else {
             // Eg: {"type":"ERROR", "date":"Sat, 07 Nov 2020 05:43:13.080835 +00:00", "ip":"127...", "message": {"type": ..
@@ -348,11 +352,19 @@ class Logger
                 'type' => $type, 'date' => self::$date->format($dateFormat),
                 'ip' => Util::getClientIp() ?: '-', 'message' => $message,
             ], JSON_UNESCAPED_SLASHES) . "\n";
+
             $separate && $log .= "\n";
         }
 
-        $this->commit($file, $log);
-        $this->rotate($file);
+        $last = md5($log);
+
+        // Prevent duplications.
+        if ($this->last != $last) {
+            $this->last = $last;
+
+            $this->commit($file, $log);
+            $this->rotate($file);
+        }
 
         return true;
     }
