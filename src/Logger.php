@@ -239,11 +239,11 @@ class Logger
         [$code, $file, $line, $message] = [$e->getCode(), $e->getFile(), $e->getLine(), $e->getMessage()];
 
         if (!$verbose) {
-            return [
+            $ret = [
                 'string'  => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
                 'trace'   => array_map(fn($s) => $clean($s, $pretty), explode("\n", $e->getTraceAsString()))];
         } else {
-            return [
+            $ret = [
                 'type'    => $type, 'code' => $code,
                 'file'    => $file, 'line' => $line,
                 'message' => $message,
@@ -251,6 +251,13 @@ class Logger
                 'trace'   => array_map(fn($s) => preg_replace('~^#\d+ (.+)~', '\1', $clean($s, $pretty)),
                     explode("\n", $e->getTraceAsString()))];
         }
+
+        // Append "previous" stuff.
+        if ($previous = $e->getPrevious()) {
+            $ret += ['previous' => self::prepare($previous, $pretty, $verbose)];
+        }
+
+        return $ret;
     }
 
     /**
@@ -301,12 +308,19 @@ class Logger
             $message = trim($message);
         } else {
             if ($pretty || $json) {
-                $message = self::prepare($message, !!$pretty, !!$json);
+                $message = $prepared = self::prepare($message, !!$pretty, !!$json);
                 $message = $json ? $message : $message['string'] . "\nTrace:\n" . join("\n", $message['trace']);
+                if (isset($prepared['previous']) && !$json) {
+                    $message .= "\nPrevious:\n" . ($json ? $prepared['previous'] : $prepared['previous']['string'])
+                        . "\nTrace:\n" . join("\n", $prepared['previous']['trace']);
+                }
             } else {
-                // $message = trim((string) $message);
-                $message = self::prepare($message, !!$pretty);
+                $message = $prepared = self::prepare($message, !!$pretty);
                 $message = $message['string'] . "\nTrace:\n" . join("\n", $message['trace']);
+                if (isset($prepared['previous'])) {
+                    $message .= "\nPrevious:\n" . $prepared['previous']['string']
+                        . "\nTrace:\n" . join("\n", $prepared['previous']['trace']);
+                }
             }
         }
 
