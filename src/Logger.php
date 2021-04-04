@@ -309,17 +309,17 @@ class Logger
         } else {
             if ($pretty || $json) {
                 $message = $prepared = self::prepare($message, !!$pretty, !!$json);
-                $message = $json ? $message : $message['string'] . "\nTrace:\n" . join("\n", $message['trace']);
+                $message = $json ? $message : $message['string'] . "\n" . join("\n", $message['trace']);
                 if (isset($prepared['previous']) && !$json) {
-                    $message .= "\nPrevious:\n" . ($json ? $prepared['previous'] : $prepared['previous']['string'])
-                        . "\nTrace:\n" . join("\n", $prepared['previous']['trace']);
+                    $message .= "\nPrevious:\n" . $prepared['previous']['string']
+                        . "\n" . join("\n", $prepared['previous']['trace']);
                 }
             } else {
                 $message = $prepared = self::prepare($message, !!$pretty);
-                $message = $message['string'] . "\nTrace:\n" . join("\n", $message['trace']);
+                $message = $message['string'] . "\n" . join("\n", $message['trace']);
                 if (isset($prepared['previous'])) {
                     $message .= "\nPrevious:\n" . $prepared['previous']['string']
-                        . "\nTrace:\n" . join("\n", $prepared['previous']['trace']);
+                        . "\n" . join("\n", $prepared['previous']['trace']);
                 }
             }
         }
