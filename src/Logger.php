@@ -9,8 +9,8 @@ namespace froq\logger;
 
 use froq\logger\LoggerException;
 use froq\common\trait\OptionTrait;
-use froq\util\Util;
-use Throwable, DateTime;
+use froq\util\{Util, Arrays};
+use Throwable, DateTime, DateTimeZone;
 
 /**
  * Logger.
@@ -48,7 +48,7 @@ class Logger
     protected static string $dateFormat = 'D, d M Y H:i:s.u P';
 
     /** @var string @since 5.0 */
-    protected string $last = '';
+    private string $lastLog = '';
 
     /** @var array */
     private static array $optionsDefault = [
@@ -57,7 +57,7 @@ class Logger
         'tag'             => null, // Be used in write() as file name appendix.
         'file'            => null, // File with full path.
         'fileName'        => null, // Be used in write() or created.
-        'utc'             => true, // Whether to use UTC date or local date.
+        'utc'             => true, // Using UTC date or local date.
         'separate'        => true, // Used for separating new lines.
         'json'            => false,
         'pretty'          => false,
@@ -72,23 +72,23 @@ class Logger
      */
     public function __construct(array $options = null)
     {
-        $this->setOptions($options, self::$optionsDefault);
+        $options = Arrays::options($options, self::$optionsDefault);
 
         // Use default log directory when available.
-        if (!$this->options['directory'] && defined('APP_DIR')) {
-             $this->options['directory'] = APP_DIR . '/var/log';
+        if (!$options['directory'] && defined('APP_DIR')) {
+            $options['directory'] = APP_DIR . '/var/log';
         }
 
-        [$level, $file, $tag, $utc] = $this->getOptions(['level', 'file', 'tag', 'utc']);
+        // Regulate tag option.
+        if ($options['tag']) {
+            $options['tag'] = '-' . trim($options['tag'], '-');
+        }
 
-        $this->setLevel((int) $level);
+        $this->setOptions($options);
 
-        $file && $this->setOption('file', $file);
-        $tag  && $this->setOption('tag', ('-'. trim($tag, '-')));
-
-        // Set date.
-        self::$date = date_create('', timezone_open(
-            $utc ? 'UTC' : date_default_timezone_get()
+        // Set date object.
+        self::$date = new DateTime('', new DateTimeZone(
+            $options['utc'] ? 'UTC' : Util::getDefaultTimezone()
         ));
     }
 
@@ -102,8 +102,9 @@ class Logger
      */
     public final function setOptions(array $options, array $optionsDefault = null): self
     {
+        // Special case of "level" option.
         if (isset($options['level'])) {
-            $this->setLevel((int) $options['level']);
+            $this->setLevel($options['level'] = (int) $options['level']);
         }
 
         return $this->_setOptions($options, $optionsDefault);
@@ -370,11 +371,11 @@ class Logger
             $separate && $log .= "\n";
         }
 
-        $last = md5($log);
+        $lastLog = md5($log);
 
         // Prevent duplications.
-        if ($this->last != $last) {
-            $this->last = $last;
+        if ($this->lastLog != $lastLog) {
+            $this->lastLog = $lastLog;
 
             $this->commit($file, $log);
             $this->rotate($file);
