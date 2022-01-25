@@ -9,7 +9,7 @@ namespace froq\logger;
 
 use froq\logger\LoggerException;
 use froq\common\trait\OptionTrait;
-use froq\util\{Util, Arrays};
+use froq\util\{Util, Arrays, misc\System};
 use Throwable, DateTime, DateTimeZone;
 
 /**
@@ -88,7 +88,7 @@ class Logger
 
         // Set date object.
         self::$date = new DateTime('', new DateTimeZone(
-            $options['utc'] ? 'UTC' : Util::getDefaultTimezone()
+            $options['utc'] ? 'UTC' : System::defaultTimezone()
         ));
     }
 
