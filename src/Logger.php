@@ -7,8 +7,7 @@ declare(strict_types=1);
 
 namespace froq\logger;
 
-use froq\logger\LoggerException;
-use froq\common\trait\OptionTrait;
+use froq\common\{Error, Exception, trait\OptionTrait};
 use froq\util\{Util, Arrays, misc\System};
 use Throwable, DateTime, DateTimeZone;
 
@@ -58,6 +57,7 @@ class Logger
         'file'            => null, // File with full path.
         'fileName'        => null, // Be used in write() or created.
         'utc'             => true, // Using UTC date or local date.
+        'full'            => true, // Using full logs with causes/previous.
         'separate'        => true, // Used for separating new lines.
         'json'            => false,
         'pretty'          => false,
@@ -257,6 +257,9 @@ class Logger
         if ($previous = $e->getPrevious()) {
             $ret += ['previous' => self::prepare($previous, $pretty, $verbose)];
         }
+        if (($e instanceof Error || $e instanceof Exception) && ($cause = $e->getCause())) {
+            $ret += ['cause' => self::prepare($cause, $pretty, $verbose)];
+        }
 
         return $ret;
     }
@@ -271,9 +274,8 @@ class Logger
      */
     protected function directoryCheck(string $directory): void
     {
-        $directory = trim($directory);
-        if ($directory == '') {
-            throw new LoggerException('Log directory is not defined yet, it must be given in'
+        if (trim($directory) == '') {
+            throw new LoggerException('Log directory is empty yet, it must be given in'
                 . ' constructor options or calling setOption() before log*() calls');
         }
 
@@ -315,12 +317,20 @@ class Logger
                     $message .= "\nPrevious:\n" . $prepared['previous']['string']
                         . "\n" . join("\n", $prepared['previous']['trace']);
                 }
+                if (isset($prepared['cause']) && !$json) {
+                    $message .= "\nCause:\n" . $prepared['cause']['string']
+                        . "\n" . join("\n", $prepared['cause']['trace']);
+                }
             } else {
                 $message = $prepared = self::prepare($message, !!$pretty);
                 $message = $message['string'] . "\n" . join("\n", $message['trace']);
                 if (isset($prepared['previous'])) {
                     $message .= "\nPrevious:\n" . $prepared['previous']['string']
                         . "\n" . join("\n", $prepared['previous']['trace']);
+                }
+                if (isset($prepared['cause'])) {
+                    $message .= "\nCause:\n" . $prepared['cause']['string']
+                        . "\n" . join("\n", $prepared['cause']['trace']);
                 }
             }
         }
