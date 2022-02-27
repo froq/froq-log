@@ -275,12 +275,17 @@ class Logger
     protected function directoryCheck(string $directory): void
     {
         if (trim($directory) == '') {
-            throw new LoggerException('Log directory is empty yet, it must be given in'
-                . ' constructor options or calling setOption() before log*() calls');
+            throw new LoggerException(
+                'Log directory is empty yet, it must be given in constructor '.
+                'options or calling setOption() before log*() calls'
+            );
         }
 
         if (!is_dir($directory) && !mkdir($directory, 0755, true)) {
-            throw new LoggerException('Cannot create log directory %s [error: %s]', [$directory, '@error']);
+            throw new LoggerException(
+                'Cannot create log directory %s [error: %s]',
+                [$directory, '@error']
+            );
         }
     }
 
@@ -394,7 +399,9 @@ class Logger
         return true;
     }
 
-    /** @internal */
+    /**
+     * Run commit process.
+     */
     private function commit(string $file, string $log): void
     {
         // Fix non-binary-safe issue of error_log().
@@ -406,7 +413,9 @@ class Logger
             || throw new LoggerException('Log process failed [error: %s]', '@error');
     }
 
-    /** @internal */
+    /**
+     * Run rotate process.
+     */
     private function rotate(string $file): void
     {
         // Mimic "logrotate" process.
