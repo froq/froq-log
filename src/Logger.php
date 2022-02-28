@@ -21,10 +21,7 @@ use Throwable, DateTime, DateTimeZone;
  */
 class Logger
 {
-    /**
-     * @see froq\common\trait\OptionTrait
-     * @since 4.0
-     */
+    /** @see froq\common\trait\OptionTrait */
     use OptionTrait {
         setOptions as private _setOptions;
     }
@@ -37,32 +34,32 @@ class Logger
                  ERROR = 1, WARN  = 2,
                  INFO  = 4, DEBUG = 8;
 
-    /** @var int @since 5.0 */
+    /** @var int */
     protected int $level;
 
-    /** @var DateTime @since 4.2 */
+    /** @var DateTime */
     protected static DateTime $date;
 
-    /** @var string @since 5.0 */
+    /** @var string */
     protected static string $dateFormat = 'D, d M Y H:i:s.u P';
 
-    /** @var string @since 5.0 */
+    /** @var string */
     private string $lastLog = '';
 
     /** @var array */
     private static array $optionsDefault = [
-        'level'           => -1,   // All. Moved as property in v/5.0.
-        'directory'       => null, // Must be given in constructor options.
-        'tag'             => null, // Be used in write() as file name appendix.
-        'file'            => null, // File with full path.
-        'fileName'        => null, // Be used in write() or created.
-        'utc'             => true, // Using UTC date or local date.
-        'full'            => true, // Using full logs with causes/previous.
-        'separate'        => true, // Used for separating new lines.
-        'json'            => false,
-        'pretty'          => false,
-        'rotate'          => false,
-        'dateFormat'      => null,
+        'level'      => -1,   // All. Moved as property in v/5.0.
+        'directory'  => null, // Must be given in constructor options.
+        'tag'        => null, // Be used in write() as file name appendix.
+        'file'       => null, // File with full path.
+        'fileName'   => null, // Be used in write() or created.
+        'utc'        => true, // Using UTC date or local date.
+        'full'       => true, // Using full logs with causes/previous.
+        'separate'   => true, // Used for separating new lines.
+        'json'       => false,
+        'pretty'     => false,
+        'rotate'     => false,
+        'dateFormat' => null,
     ];
 
     /**
@@ -80,7 +77,7 @@ class Logger
         }
 
         // Regulate tag option.
-        if ($options['tag']) {
+        if ($options['tag'] != '') {
             $options['tag'] = '-' . trim($options['tag'], '-');
         }
 
@@ -138,8 +135,9 @@ class Logger
     /**
      * Get current log file.
      *
-     * @note   Log file will be set in write() method, so this method returns null if any log*()
-     *         method not yet called those run write() method.
+     * Note: Log file will be set in write() method, so this method returns null
+     * if any log*() method not yet called those run write() method.
+     *
      * @return string|null
      */
     public final function getFile(): string|null
@@ -158,12 +156,11 @@ class Logger
     }
 
     /**
-     * Log a trivial message (this method may be used for skipping leveled log states).
+     * Log a trivial message (this method may be used for skipping leveled calls).
      *
      * @param  string|Throwable $message
      * @bool   bool             $separate
      * @return bool
-     * @since  3.2, 4.0 Renamed from logAny().
      */
     public final function log(string|Throwable $message, bool $separate = true): bool
     {
@@ -225,7 +222,7 @@ class Logger
      * @param  bool      $pretty
      * @param  bool      $verbose
      * @return array
-     * @since  4.1, 4.2 Replaced with prettify().
+     * @since  4.1, 4.2
      */
     public static function prepare(Throwable $e, bool $pretty, bool $verbose = false): array
     {
@@ -265,8 +262,8 @@ class Logger
     }
 
     /**
-     * Check directory to ensure directory is created/exists, throw LoggerException if no directory option
-     * given yet or cannot create that directory when not exists.
+     * Check directory to ensure directory is created/exists, throw `LoggerException`
+     * if no directory option given yet or cannot create that directory when not exists.
      *
      * @param  string $directory
      * @return void
@@ -290,8 +287,8 @@ class Logger
     }
 
     /**
-     * Write a trivial or leveled message to current log file, throw a LoggerException if error_log() or
-     * "logrotate" process fails.
+     * Write a trivial or leveled message to current log file, throw `LoggerException`
+     * if error_log() or "logrotate" process fails.
      *
      * @param  int              $level
      * @param  string|null      $type
@@ -299,7 +296,6 @@ class Logger
      * @bool   bool             $separate
      * @throws froq\logger\LoggerException
      * @return bool
-     * @since  4.0 Renamed to write() from log(), made private.
      */
     protected function write(int $level, string|null $type, string|Throwable $message, bool $separate = true): bool
     {
@@ -346,7 +342,7 @@ class Logger
         $this->directoryCheck((string) $directory);
 
         // Prepare if not given.
-        if ($file == null) {
+        if (!$file) {
             $fileName ??= self::$date->format('Y-m-d');
 
             // Because permissions.
@@ -410,7 +406,7 @@ class Logger
         }
 
         error_log($log, 3, $file)
-            || throw new LoggerException('Log process failed [error: %s]', '@error');
+            || throw new LoggerException('Log process failed [error: @error]');
     }
 
     /**
@@ -424,7 +420,7 @@ class Logger
             foreach (glob($glob) as $gfile) {
                 if ($gfile != $file) {
                     (copy($gfile, 'compress.zlib://' . $gfile . '.gz') && unlink($gfile))
-                        || throw new LoggerException('Log rotate failed [error: %s]', '@error');
+                        || throw new LoggerException('Log rotate failed [error: @error]');
                 }
             }
         }
