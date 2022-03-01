@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace froq\logger;
 
 use froq\common\{Error, Exception, trait\OptionTrait};
-use froq\util\{Util, Arrays, misc\System};
+use froq\util\{Util, misc\System};
 use Throwable, DateTime, DateTimeZone;
 
 /**
@@ -23,6 +23,7 @@ class Logger
 {
     /** @see froq\common\trait\OptionTrait */
     use OptionTrait {
+        setOption as private _setOption;
         setOptions as private _setOptions;
     }
 
@@ -69,10 +70,10 @@ class Logger
      */
     public function __construct(array $options = null)
     {
-        $options = Arrays::options($options, self::$optionsDefault);
+        $options = array_options($options, self::$optionsDefault);
 
         // Use default log directory when available.
-        if (!$options['directory'] && defined('APP_DIR')) {
+        if ($options['directory'] == '' && defined('APP_DIR')) {
             $options['directory'] = APP_DIR . '/var/log';
         }
 
@@ -87,6 +88,24 @@ class Logger
         self::$date = new DateTime('', new DateTimeZone(
             $options['utc'] ? 'UTC' : System::defaultTimezone()
         ));
+    }
+
+    /**
+     * Set option.
+     *
+     * @param  array $options
+     * @param  mixed $value
+     * @return self
+     * @since  6.0
+     */
+    public final function setOption(string $option, mixed $value): self
+    {
+        // Special case of "level" option.
+        if ($option == 'level') {
+            $this->setLevel($value = intval($value));
+        }
+
+        return $this->_setOption($option, $value);
     }
 
     /**
