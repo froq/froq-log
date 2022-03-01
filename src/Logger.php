@@ -101,7 +101,7 @@ class Logger
     {
         // Special case of "level" option.
         if (isset($options['level'])) {
-            $this->setLevel($options['level'] = (int) $options['level']);
+            $this->setLevel($options['level'] = intval($options['level']));
         }
 
         return $this->_setOptions($options, $optionsDefault);
