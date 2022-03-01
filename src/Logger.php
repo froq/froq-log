@@ -278,9 +278,9 @@ class Logger
             );
         }
 
-        if (!is_dir($directory) && !mkdir($directory, 0755, true)) {
+        if (!dirmake($directory)) {
             throw new LoggerException(
-                'Cannot create log directory %s [error: %s]',
+                'Cannot create log directory %S [error: %s]',
                 [$directory, '@error']
             );
         }
