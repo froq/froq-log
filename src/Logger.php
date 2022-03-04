@@ -21,7 +21,6 @@ use Throwable, DateTime, DateTimeZone;
  */
 class Logger
 {
-    /** @see froq\common\trait\OptionTrait */
     use OptionTrait {
         setOption as private _setOption;
         setOptions as private _setOptions;
