@@ -62,6 +62,31 @@ class Logger
     }
 
     /**
+     * Set log level.
+     *
+     * @param  int $level
+     * @return self
+     * @since  5.0
+     */
+    public final function setLevel(int $level): self
+    {
+        $this->level = $level;
+
+        return $this;
+    }
+
+    /**
+     * Get log level.
+     *
+     * @return int
+     * @since  5.0
+     */
+    public final function getLevel(): int
+    {
+        return $this->level;
+    }
+
+    /**
      * Set option.
      *
      * @param  string $option
@@ -92,31 +117,6 @@ class Logger
     public final function getOption(string $option, mixed $default = null): mixed
     {
         return $this->options[$option] ?? $default;
-    }
-
-    /**
-     * Set log level.
-     *
-     * @param  int $level
-     * @return self
-     * @since  5.0
-     */
-    public final function setLevel(int $level): self
-    {
-        $this->level = $level;
-
-        return $this;
-    }
-
-    /**
-     * Get log level.
-     *
-     * @return int
-     * @since  5.0
-     */
-    public final function getLevel(): int
-    {
-        return $this->level;
     }
 
     /**
