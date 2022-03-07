@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace froq\logger;
 
-use froq\common\{Error, Exception, trait\OptionTrait};
+use froq\common\{Error, Exception};
 use froq\util\{Util, misc\System};
 use Throwable, DateTime, DateTimeZone;
 
@@ -21,46 +21,28 @@ use Throwable, DateTime, DateTimeZone;
  */
 class Logger
 {
-    use OptionTrait {
-        setOption as private _setOption;
-        setOptions as private _setOptions;
-    }
-
     /**
      * Levels.
      * @const int
      */
-    public const NONE  = 0, ALL   = -1,
-                 ERROR = 1, WARN  = 2,
-                 INFO  = 4, DEBUG = 8;
+    public final const NONE  = 0, ALL   = -1,
+                       ERROR = 1, WARN  = 2,
+                       INFO  = 4, DEBUG = 8;
 
     /** @var int */
-    protected int $level;
+    private int $level;
 
     /** @var DateTime */
-    protected static DateTime $date;
+    private static DateTime $date;
 
     /** @var string */
-    protected static string $dateFormat = 'D, d M Y H:i:s.u P';
+    private static string $dateFormat = 'D, d M Y H:i:s.u P';
 
-    /** @var string */
-    private string $lastLog = '';
+    /** @var froq\logger\LoggerOptions */
+    private LoggerOptions $options;
 
-    /** @var array */
-    private static array $optionsDefault = [
-        'level'      => -1,   // All. Moved as property in v/5.0.
-        'directory'  => null, // Must be given in constructor options.
-        'tag'        => null, // Be used in write() as file name appendix.
-        'file'       => null, // File with full path.
-        'fileName'   => null, // Be used in write() or created.
-        'utc'        => true, // Using UTC date or local date.
-        'full'       => true, // Using full logs with causes/previous.
-        'separate'   => true, // Used for separating new lines.
-        'json'       => false,
-        'pretty'     => false,
-        'rotate'     => false,
-        'dateFormat' => null,
-    ];
+    /** @var ?string */
+    private ?string $lastLog = null;
 
     /**
      * Constructor.
@@ -69,31 +51,21 @@ class Logger
      */
     public function __construct(array $options = null)
     {
-        $options = array_options($options, self::$optionsDefault);
+        $this->options = LoggerOptions::create($options);
 
-        // Use default log directory when available.
-        if ($options['directory'] == '' && defined('APP_DIR')) {
-            $options['directory'] = APP_DIR . '/var/log';
-        }
-
-        // Regulate tag option.
-        if ($options['tag'] != '') {
-            $options['tag'] = '-' . trim($options['tag'], '-');
-        }
-
-        $this->setOptions($options);
+        $this->setLevel($this->options['level']);
 
         // Set date object.
         self::$date = new DateTime('', new DateTimeZone(
-            $options['utc'] ? 'UTC' : System::defaultTimezone()
+            $this->options['utc'] ? 'UTC' : System::defaultTimezone()
         ));
     }
 
     /**
      * Set option.
      *
-     * @param  array $options
-     * @param  mixed $value
+     * @param  string $option
+     * @param  mixed  $value
      * @return self
      * @since  6.0
      */
@@ -101,28 +73,25 @@ class Logger
     {
         // Special case of "level" option.
         if ($option == 'level') {
-            $this->setLevel($value = intval($value));
+            $this->setLevel($value = (int) $value);
         }
 
-        return $this->_setOption($option, $value);
+        $this->options[$option] = $value;
+
+        return $this;
     }
 
     /**
-     * Set options.
+     * Get option.
      *
-     * @param  array      $options
-     * @param  array|null $optionsDefault
-     * @return self
-     * @since  5.0
+     * @param  string     $option
+     * @param  mixed|null $default
+     * @return mixed
+     * @since  6.0
      */
-    public final function setOptions(array $options, array $optionsDefault = null): self
+    public final function getOption(string $option, mixed $default = null): mixed
     {
-        // Special case of "level" option.
-        if (isset($options['level'])) {
-            $this->setLevel($options['level'] = intval($options['level']));
-        }
-
-        return $this->_setOptions($options, $optionsDefault);
+        return $this->options[$option] ?? $default;
     }
 
     /**
@@ -182,7 +151,7 @@ class Logger
      */
     public final function log(string|Throwable $message, bool $separate = true): bool
     {
-        return $this->write(-1, null, $message, $separate);
+        return $this->write(self::ALL, null, $message, $separate);
     }
 
     /**
@@ -210,7 +179,7 @@ class Logger
     }
 
     /**
-     * Log an informational message.
+     * Log an info message.
      *
      * @param  string|Throwable $message
      * @bool   bool             $separate
@@ -254,11 +223,8 @@ class Logger
 
         [$code, $file, $line, $message] = [$e->getCode(), $e->getFile(), $e->getLine(), $e->getMessage()];
 
-        if (!$verbose) {
-            $ret = [
-                'string'  => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
-                'trace'   => array_map(fn($s) => $clean($s, $pretty), explode("\n", $e->getTraceAsString()))];
-        } else {
+        // Works if "options.json=true" only.
+        if ($verbose) {
             $ret = [
                 'type'    => $type, 'code' => $code,
                 'file'    => $file, 'line' => $line,
@@ -266,6 +232,10 @@ class Logger
                 'string'  => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
                 'trace'   => array_map(fn($s) => preg_replace('~^#\d+ (.+)~', '\1', $clean($s, $pretty)),
                     explode("\n", $e->getTraceAsString()))];
+        } else {
+            $ret = [
+                'string'  => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
+                'trace'   => array_map(fn($s) => $clean($s, $pretty), explode("\n", $e->getTraceAsString()))];
         }
 
         // Append "previous" stuff.
@@ -318,11 +288,11 @@ class Logger
     protected function write(int $level, string|null $type, string|Throwable $message, bool $separate = true): bool
     {
         // No log?
-        if (!$level || !($level & $this->level)) {
+        if (($level > -1) && (!$level || !($level & $this->level))) {
             return false;
         }
 
-        [$directory, $file, $fileName, $tag, $json, $pretty, $dateFormat] = $this->getOptions(
+        [$directory, $file, $fileName, $tag, $json, $pretty, $dateFormat] = $this->options->select(
             ['directory', 'file', 'fileName', 'tag', 'json', 'pretty', 'dateFormat']
         );
 
@@ -380,8 +350,8 @@ class Logger
                 default => 'LOG'
         };
 
-        // Use default date format if not given.
-        $dateFormat = $this->getOption('dateFormat', self::$dateFormat);
+        // Use default date format if none given.
+        $dateFormat = $dateFormat ?: self::$dateFormat;
 
         if (!$json) {
             // Eg: [ERROR] Sat, 31 Oct 2020 02:00:34.377367 +00:00 | 127.0.0.1 | Error(0): ..
@@ -400,10 +370,8 @@ class Logger
             $separate && $log .= "\n";
         }
 
-        $lastLog = md5($log);
-
         // Prevent duplications.
-        if ($this->lastLog != $lastLog) {
+        if ($this->lastLog != $lastLog = md5($log)) {
             $this->lastLog = $lastLog;
 
             $this->commit($file, $log);
