@@ -12,7 +12,7 @@ use froq\util\{Util, misc\System};
 use Throwable, DateTime, DateTimeZone;
 
 /**
- * Logger.
+ * A logger class for logging and optionally rotating logs.
  *
  * @package froq\logger
  * @object  froq\logger\Logger

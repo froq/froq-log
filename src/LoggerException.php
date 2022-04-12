@@ -7,15 +7,11 @@ declare(strict_types=1);
 
 namespace froq\logger;
 
-use froq\common\Exception;
-
 /**
- * Logger Exception.
- *
  * @package froq\logger
  * @object  froq\logger\LoggerException
  * @author  Kerem Güneş
  * @since   1.0
  */
-class LoggerException extends Exception
+class LoggerException extends \froq\common\Exception
 {}

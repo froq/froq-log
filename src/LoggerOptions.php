@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace froq\logger;
 
 /**
- * Logger Options.
+ * Logger options with defaults.
  *
  * @package froq\logger
  * @object  froq\logger\LoggerOptions
