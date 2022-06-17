@@ -14,6 +14,7 @@ namespace froq\logger;
  * @object  froq\logger\LoggerOptions
  * @author  Kerem Güneş
  * @since   6.0
+ * @internal
  */
 class LoggerOptions extends \Options
 {
