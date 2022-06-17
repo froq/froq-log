@@ -238,7 +238,7 @@ class Logger
                 'trace'   => array_map(fn($s) => $clean($s, $pretty), explode("\n", $e->getTraceAsString()))];
         }
 
-        // Append "previous" stuff.
+        // Append previous/cause stuff.
         if ($previous = $e->getPrevious()) {
             $ret += ['previous' => self::prepare($previous, $pretty, $verbose)];
         }
