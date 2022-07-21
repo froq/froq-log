@@ -8,7 +8,7 @@ declare(strict_types=1);
 namespace froq\logger;
 
 use froq\common\{Error, Exception};
-use froq\util\{Util, misc\System};
+use froq\util\Util;
 use Throwable, DateTime, DateTimeZone;
 
 /**
@@ -27,9 +27,6 @@ class Logger
     /** @var DateTime */
     private static DateTime $date;
 
-    /** @var string */
-    private static string $dateFormat = 'D, d M Y H:i:s.u P';
-
     /** @var froq\logger\LoggerOptions */
     private LoggerOptions $options;
 
@@ -47,10 +44,7 @@ class Logger
 
         $this->setLevel($this->options['level']);
 
-        // Set date object.
-        self::$date = new DateTime('', new DateTimeZone(
-            $this->options['utc'] ? 'UTC' : System::defaultTimezone()
-        ));
+        self::$date = new DateTime('', new DateTimeZone($this->options['timeZone']));
     }
 
     /**
@@ -284,8 +278,8 @@ class Logger
             return false;
         }
 
-        [$directory, $file, $fileName, $tag, $json, $pretty, $dateFormat] = $this->options->select(
-            ['directory', 'file', 'fileName', 'tag', 'json', 'pretty', 'dateFormat']
+        [$directory, $file, $fileName, $tag, $json, $pretty, $format] = $this->options->select(
+            ['directory', 'file', 'fileName', 'tag', 'json', 'pretty', 'timeFormat']
         );
 
         if (is_string($message)) {
@@ -342,20 +336,17 @@ class Logger
             default         => 'LOG',
         };
 
-        // Use default date format if none given.
-        $dateFormat = $dateFormat ?: self::$dateFormat;
-
         if (!$json) {
             // Eg: [ERROR] Sat, 31 Oct 2020 02:00:34.377367 +00:00 | 127.0.0.1 | Error(0): ..
             $log = sprintf("[%s] %s | %s | %s",
-                $type, self::$date->format($dateFormat),
+                $type, self::$date->format($format),
                 Util::getClientIp() ?: '-', $message) . "\n";
 
             $separate && $log .= "\n";
         } else {
             // Eg: {"type":"ERROR", "date":"Sat, 07 Nov 2020 05:43:13.080835 +00:00", "ip":"127...", "message":{"type": ..
             $log = json_encode([
-                'type' => $type, 'date' => self::$date->format($dateFormat),
+                'type' => $type, 'date' => self::$date->format($format),
                 'ip' => Util::getClientIp() ?: '-', 'message' => $message,
             ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
 

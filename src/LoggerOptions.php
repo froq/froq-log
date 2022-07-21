@@ -32,11 +32,11 @@ class LoggerOptions extends \Options
             'directory'  => null, // Must be given in constructor options.
             'file'       => null, // File with full path.
             'fileName'   => null, // Be used in write() or created.
-            'utc'        => true, // Using UTC date or local date.
+            'timeZone'   => 'UTC',
+            'timeFormat' => 'D, d M Y H:i:s.u P',
             'json'       => false,
             'pretty'     => false,
             'rotate'     => false,
-            'dateFormat' => null,
         ];
 
         // Create & filter base options.
