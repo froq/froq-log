@@ -21,14 +21,6 @@ use Throwable, DateTime, DateTimeZone;
  */
 class Logger
 {
-    /**
-     * Levels.
-     * @const int
-     */
-    public final const NONE  = 0, ALL   = -1,
-                       ERROR = 1, WARN  = 2,
-                       INFO  = 4, DEBUG = 8;
-
     /** @var int */
     private int $level;
 
@@ -151,7 +143,7 @@ class Logger
      */
     public final function log(string|Throwable $message, bool $separate = true): bool
     {
-        return $this->write(self::ALL, null, $message, $separate);
+        return $this->write(LogLevel::ALL, null, $message, $separate);
     }
 
     /**
@@ -163,7 +155,7 @@ class Logger
      */
     public final function logError(string|Throwable $message, bool $separate = true): bool
     {
-        return $this->write(self::ERROR, null, $message, $separate);
+        return $this->write(LogLevel::ERROR, null, $message, $separate);
     }
 
     /**
@@ -175,7 +167,7 @@ class Logger
      */
     public final function logWarn(string|Throwable $message, bool $separate = true): bool
     {
-        return $this->write(self::WARN, null, $message, $separate);
+        return $this->write(LogLevel::WARN, null, $message, $separate);
     }
 
     /**
@@ -187,7 +179,7 @@ class Logger
      */
     public final function logInfo(string|Throwable $message, bool $separate = true): bool
     {
-        return $this->write(self::INFO, null, $message, $separate);
+        return $this->write(LogLevel::INFO, null, $message, $separate);
     }
 
     /**
@@ -199,7 +191,7 @@ class Logger
      */
     public final function logDebug(string|Throwable $message, bool $separate = true): bool
     {
-        return $this->write(self::DEBUG, null, $message, $separate);
+        return $this->write(LogLevel::DEBUG, null, $message, $separate);
     }
 
     /**
@@ -275,14 +267,14 @@ class Logger
     }
 
     /**
-     * Write a trivial or leveled message to current log file, throw `LoggerException`
+     * Write a trivial or leveled message to current log file, cause `LoggerException`
      * if error_log() or "logrotate" process fails.
      *
      * @param  int              $level
      * @param  string|null      $type
      * @param  string|Throwable $message
      * @bool   bool             $separate
-     * @throws froq\logger\LoggerException
+     * @causes froq\logger\LoggerException
      * @return bool
      */
     protected function write(int $level, string|null $type, string|Throwable $message, bool $separate = true): bool
@@ -324,16 +316,16 @@ class Logger
             }
         }
 
-        // Use file's directory if given.
+        // Use file's directory if file given but not directory given.
         $directory ??= $file ? dirname($file) : null;
 
         $this->directoryCheck((string) $directory);
 
-        // Prepare if not given.
+        // Prepare file if not given.
         if (!$file) {
             $fileName ??= self::$date->format('Y-m-d');
 
-            // Because permissions.
+            // Because of permissions.
             $file = (PHP_SAPI != 'cli-server')
                   ? sprintf('%s/%s%s.log', $directory, $fileName, $tag)
                   : sprintf('%s/%s-cli-server%s.log', $directory, $fileName, $tag);
@@ -345,9 +337,9 @@ class Logger
 
         // Allowed override via write() calls from extender classes.
         $type = $type ?: match ($level) {
-            self::ERROR => 'ERROR', self::WARN  => 'WARN',
-            self::INFO  => 'INFO',  self::DEBUG => 'DEBUG',
-                default => 'LOG'
+            LogLevel::ERROR => 'ERROR', LogLevel::WARN  => 'WARN',
+            LogLevel::INFO  => 'INFO',  LogLevel::DEBUG => 'DEBUG',
+            default         => 'LOG',
         };
 
         // Use default date format if none given.
@@ -361,11 +353,11 @@ class Logger
 
             $separate && $log .= "\n";
         } else {
-            // Eg: {"type":"ERROR", "date":"Sat, 07 Nov 2020 05:43:13.080835 +00:00", "ip":"127...", "message": {"type": ..
+            // Eg: {"type":"ERROR", "date":"Sat, 07 Nov 2020 05:43:13.080835 +00:00", "ip":"127...", "message":{"type": ..
             $log = json_encode([
                 'type' => $type, 'date' => self::$date->format($dateFormat),
                 'ip' => Util::getClientIp() ?: '-', 'message' => $message,
-            ], JSON_UNESCAPED_SLASHES) . "\n";
+            ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
 
             $separate && $log .= "\n";
         }
@@ -383,6 +375,8 @@ class Logger
 
     /**
      * Run commit process.
+     *
+     * @throws froq\logger\LoggerException
      */
     private function commit(string $file, string $log): void
     {
@@ -392,11 +386,13 @@ class Logger
         }
 
         error_log($log, 3, $file)
-            || throw new LoggerException('Log process failed [error: @error]');
+            || throw new LoggerException('Log commit failed [error: @error]');
     }
 
     /**
      * Run rotate process.
+     *
+     * @throws froq\logger\LoggerException
      */
     private function rotate(string $file): void
     {
