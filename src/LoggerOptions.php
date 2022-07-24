@@ -53,7 +53,7 @@ class LoggerOptions extends \Options
 
         // Regulate tag option.
         if ($that->tag != '') {
-            $that->tag = '-' . trim((string) $that->tag, '-');
+            $that->tag = trim((string) $that->tag, '-');
         }
 
         return $that;

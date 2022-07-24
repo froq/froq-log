@@ -30,8 +30,8 @@ class Logger
     /** @var froq\logger\LoggerOptions */
     private LoggerOptions $options;
 
-    /** @var ?string */
-    private ?string $lastLog = null;
+    /** @var string */
+    private string $lastLog = '';
 
     /**
      * Constructor.
@@ -318,11 +318,14 @@ class Logger
         // Prepare file if not given.
         if (!$file) {
             $fileName ??= self::$date->format('Y-m-d');
+            if ($tag != '') {
+                $fileName .= '-' . $tag;
+            }
 
             // Because of permissions.
             $file = (PHP_SAPI != 'cli-server')
-                  ? sprintf('%s/%s%s.log', $directory, $fileName, $tag)
-                  : sprintf('%s/%s-cli-server%s.log', $directory, $fileName, $tag);
+                  ? sprintf('%s/%s.log', $directory, $fileName)
+                  : sprintf('%s/%s-cli-server.log', $directory, $fileName);
 
             // Store as option to speed up write process.
             $this->options['file']     = $file;
