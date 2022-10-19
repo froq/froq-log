@@ -41,7 +41,7 @@ class LoggerOptions extends \Options
 
         // Create & filter base options.
         $that = (new LoggerOptions($options, $optionsDefault))
-            ->filterDefaultKeys($optionsDefault);
+            ->filterDefaults($optionsDefault);
 
         // Special case of level.
         $that->level = (int) $that->level;
