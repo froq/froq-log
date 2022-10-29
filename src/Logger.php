@@ -132,60 +132,55 @@ class Logger
      * Log a trivial message (this method may be used for skipping leveled calls).
      *
      * @param  string|Throwable $message
-     * @bool   bool             $separate
      * @return bool
      */
-    public final function log(string|Throwable $message, bool $separate = true): bool
+    public final function log(string|Throwable $message): bool
     {
-        return $this->write(LogLevel::ALL, null, $message, $separate);
+        return $this->write(LogLevel::ALL, null, $message);
     }
 
     /**
      * Log an error message.
      *
      * @param  string|Throwable $message
-     * @bool   bool             $separate
      * @return bool
      */
-    public final function logError(string|Throwable $message, bool $separate = true): bool
+    public final function logError(string|Throwable $message): bool
     {
-        return $this->write(LogLevel::ERROR, null, $message, $separate);
+        return $this->write(LogLevel::ERROR, null, $message);
     }
 
     /**
      * Log a warning message.
      *
      * @param  string|Throwable $message
-     * @bool   bool             $separate
      * @return bool
      */
-    public final function logWarn(string|Throwable $message, bool $separate = true): bool
+    public final function logWarn(string|Throwable $message): bool
     {
-        return $this->write(LogLevel::WARN, null, $message, $separate);
+        return $this->write(LogLevel::WARN, null, $message);
     }
 
     /**
      * Log an info message.
      *
      * @param  string|Throwable $message
-     * @bool   bool             $separate
      * @return bool
      */
-    public final function logInfo(string|Throwable $message, bool $separate = true): bool
+    public final function logInfo(string|Throwable $message): bool
     {
-        return $this->write(LogLevel::INFO, null, $message, $separate);
+        return $this->write(LogLevel::INFO, null, $message);
     }
 
     /**
      * Log a debug message.
      *
      * @param  string|Throwable $message
-     * @bool   bool             $separate
      * @return bool
      */
-    public final function logDebug(string|Throwable $message, bool $separate = true): bool
+    public final function logDebug(string|Throwable $message): bool
     {
-        return $this->write(LogLevel::DEBUG, null, $message, $separate);
+        return $this->write(LogLevel::DEBUG, null, $message);
     }
 
     /**
@@ -267,11 +262,10 @@ class Logger
      * @param  int              $level
      * @param  string|null      $type
      * @param  string|Throwable $message
-     * @bool   bool             $separate
      * @causes froq\logger\LoggerException
      * @return bool
      */
-    protected function write(int $level, string|null $type, string|Throwable $message, bool $separate = true): bool
+    protected function write(int $level, string|null $type, string|Throwable $message): bool
     {
         // No log?
         if (($level > -1) && (!$level || !($level & $this->level))) {
@@ -281,6 +275,8 @@ class Logger
         [$directory, $file, $fileName, $tag, $json, $pretty, $format] = $this->options->select(
             ['directory', 'file', 'fileName', 'tag', 'json', 'pretty', 'timeFormat']
         );
+
+        $messageOrig = $message;
 
         if (is_string($message)) {
             $message = trim($message);
@@ -339,22 +335,31 @@ class Logger
             default         => 'LOG',
         };
 
+        $ip   = Util::getClientIp() ?: '-';
+        $date = self::$date->format($format);
+
         if (!$json) {
-            // Eg: [ERROR] Sat, 31 Oct 2020 02:00:34.377367 +00:00 | 127.0.0.1 | Error(0): ..
-            $log = sprintf("[%s] %s | %s | %s",
-                $type, self::$date->format($format),
-                Util::getClientIp() ?: '-', $message) . "\n";
-
-            $separate && $log .= "\n";
+            // Eg: [ERROR] Sat, 31 Oct 2020 .. | 127.0.0.1 | Error(0): ..
+            $log = sprintf(
+                "[%s] %s | %s | %s",
+                $type, $date, $ip, $message
+            );
         } else {
-            // Eg: {"type":"ERROR", "date":"Sat, 07 Nov 2020 05:43:13.080835 +00:00", "ip":"127...", "message":{"type": ..
-            $log = json_encode([
-                'type' => $type, 'date' => self::$date->format($format),
-                'ip' => Util::getClientIp() ?: '-', 'message' => $message,
-            ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
+            // Regulate fields for LogParser parsing rules (@see LogParser.parseFileEntry()).
+            [$content, $thrown] = ($messageOrig instanceof Throwable) ? [null, $message] : [$message, null];
 
-            $separate && $log .= "\n";
+            // Eg: {"type":"ERROR", "date":"Sat, 07 Nov 2020 ..", "ip":"127...", "content":null, "thrown":{"type": ..
+            $log = json_encode(
+                [
+                    'type' => $type, 'date' => $date, 'ip' => $ip,
+                    'content' => $content, 'thrown' => $thrown
+                ],
+                JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+            );
         }
+
+        // Separator for the LogParser.
+        $log .= "\n\n";
 
         // Prevent duplications.
         if ($this->lastLog != $lastLog = md5($log)) {
