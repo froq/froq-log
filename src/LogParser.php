@@ -182,7 +182,7 @@ class LogParser
                 $ret['thrown'] = $parseThrown($ret['content']);
             }
         }
-        // JSON log.
+        // JSON log entry.
         elseif ($entry[0] == '{') {
             $ret = json_decode($entry, true);
             if (json_last_error()) {
