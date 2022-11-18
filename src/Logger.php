@@ -9,7 +9,7 @@ namespace froq\logger;
 
 use froq\common\{Error, Exception};
 use froq\util\Util;
-use Throwable, DateTime, DateTimeZone;
+use Stringable, Throwable, DateTime, DateTimeZone;
 
 /**
  * A logger class for logging and optionally rotating logs.
@@ -131,10 +131,10 @@ class Logger
     /**
      * Log a trivial message (this method may be used for skipping leveled calls).
      *
-     * @param  string|Throwable $message
+     * @param  string|Stringable $message
      * @return bool
      */
-    public final function log(string|Throwable $message): bool
+    public final function log(string|Stringable $message): bool
     {
         return $this->write(LogLevel::ALL, null, $message);
     }
@@ -142,10 +142,10 @@ class Logger
     /**
      * Log an error message.
      *
-     * @param  string|Throwable $message
+     * @param  string|Stringable $message
      * @return bool
      */
-    public final function logError(string|Throwable $message): bool
+    public final function logError(string|Stringable $message): bool
     {
         return $this->write(LogLevel::ERROR, null, $message);
     }
@@ -153,10 +153,10 @@ class Logger
     /**
      * Log a warning message.
      *
-     * @param  string|Throwable $message
+     * @param  string|Stringable $message
      * @return bool
      */
-    public final function logWarn(string|Throwable $message): bool
+    public final function logWarn(string|Stringable $message): bool
     {
         return $this->write(LogLevel::WARN, null, $message);
     }
@@ -164,10 +164,10 @@ class Logger
     /**
      * Log an info message.
      *
-     * @param  string|Throwable $message
+     * @param  string|Stringable $message
      * @return bool
      */
-    public final function logInfo(string|Throwable $message): bool
+    public final function logInfo(string|Stringable $message): bool
     {
         return $this->write(LogLevel::INFO, null, $message);
     }
@@ -175,10 +175,10 @@ class Logger
     /**
      * Log a debug message.
      *
-     * @param  string|Throwable $message
+     * @param  string|Stringable $message
      * @return bool
      */
-    public final function logDebug(string|Throwable $message): bool
+    public final function logDebug(string|Stringable $message): bool
     {
         return $this->write(LogLevel::DEBUG, null, $message);
     }
@@ -259,13 +259,13 @@ class Logger
      * Write a trivial or leveled message to current log file, cause `LoggerException`
      * if error_log() or "logrotate" process fails.
      *
-     * @param  int              $level
-     * @param  string|null      $type
-     * @param  string|Throwable $message
+     * @param  int               $level
+     * @param  string|null       $type
+     * @param  string|Stringable $message
      * @causes froq\logger\LoggerException
      * @return bool
      */
-    protected function write(int $level, string|null $type, string|Throwable $message): bool
+    protected function write(int $level, string|null $type, string|Stringable $message): bool
     {
         // No log?
         if (($level > -1) && (!$level || !($level & $this->level))) {
@@ -278,9 +278,7 @@ class Logger
 
         $messageOrig = $message;
 
-        if (is_string($message)) {
-            $message = trim($message);
-        } else {
+        if ($message instanceof Throwable) {
             if ($pretty || $json) {
                 $message = $prepared = self::prepare($message, !!$pretty, !!$json);
                 $message = $json ? $message : $message['string'] . "\n" . join("\n", $message['trace']);
@@ -304,6 +302,8 @@ class Logger
                         . "\n" . join("\n", $prepared['cause']['trace']);
                 }
             }
+        } else {
+            $message = trim((string) $message);
         }
 
         // Use file's directory if file given but not directory given.
