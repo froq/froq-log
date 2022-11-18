@@ -13,7 +13,7 @@ namespace froq\logger;
  * @package froq\logger
  * @object  froq\logger\LogParser
  * @author  Kerem Güneş
- * @since   6.1
+ * @since   7.0
  */
 class LogParser
 {
@@ -74,6 +74,11 @@ class LogParser
      */
     public static function parseFile(string $file): \Generator
     {
+        // Swap files temporarily.
+        if ($tmpFile = self::copyGzFileAsTmpFile($file)) {
+            $file = $tmpFile;
+        }
+
         try {
             $file = new \SplFileInfo($file);
             $type = $file->getType();
@@ -107,6 +112,9 @@ class LogParser
         } catch (\Throwable $e) {
             throw LogParserException::forCaughtThrowable($e);
         }
+
+        // Drop uncompressed file.
+        $tmpFile && unlink($tmpFile);
     }
 
     /**
@@ -183,5 +191,34 @@ class LogParser
         }
 
         return $ret;
+    }
+
+    /**
+     * Copy file as a temporary file if it's a GZ file & return new file path.
+     */
+    private static function copyGzFileAsTmpFile(string $file): string|null
+    {
+        if (!file_exists($file)) {
+            return null;
+        }
+        if (!str_ends_with($file, '.gz')) {
+            return null;
+        }
+
+        $tmpFile = null;
+
+        if ($sfp =@ gzopen($file, 'rb')) {
+            $tmp = format('%s/%s.log', tmp(), uuid());
+            if ($dfp =@ fopen($tmp, 'wb')) {
+                $tmpFile = $tmp;
+                while (!gzeof($sfp)) {
+                    fwrite($dfp, gzread($sfp, 2048));
+                }
+                fclose($dfp);
+            }
+            gzclose($sfp);
+        }
+
+        return $tmpFile;
     }
 }

@@ -11,7 +11,7 @@ namespace froq\logger;
  * @package froq\logger
  * @object  froq\logger\LogParserException
  * @author  Kerem Güneş
- * @since   6.1
+ * @since   7.0
  */
 class LogParserException extends \froq\common\Exception
 {
