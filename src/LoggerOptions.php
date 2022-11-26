@@ -46,7 +46,7 @@ class LoggerOptions extends \Options
         $that->level = (int) $that->level;
 
         // Use default log directory when available.
-        if ($that->directory === '' && defined('APP_DIR')) {
+        if ($that->directory === null && defined('APP_DIR')) {
             $that->directory = APP_DIR . '/var/log';
         }
 
