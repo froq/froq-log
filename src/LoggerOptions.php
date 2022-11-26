@@ -46,12 +46,12 @@ class LoggerOptions extends \Options
         $that->level = (int) $that->level;
 
         // Use default log directory when available.
-        if ($that->directory == '' && defined('APP_DIR')) {
+        if ($that->directory === '' && defined('APP_DIR')) {
             $that->directory = APP_DIR . '/var/log';
         }
 
         // Regulate tag option.
-        if ($that->tag != '') {
+        if ($that->tag !== '') {
             $that->tag = trim((string) $that->tag, '-');
         }
 

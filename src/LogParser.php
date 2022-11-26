@@ -60,8 +60,7 @@ class LogParser
      */
     public function parse(): \Generator
     {
-        $file = $this->getFile()
-            ?? throw LogParserException::forEmptyFile();
+        $file = $this->getFile() ?? throw LogParserException::forEmptyFile();
 
         return self::parseFile($file);
     }
@@ -87,7 +86,7 @@ class LogParser
         }
 
         if (!$file->isFile()) {
-            $type = ($type == 'dir') ? 'directory' : ($type ?: 'unknown');
+            $type = ($type === 'dir') ? 'directory' : ($type ?: 'unknown');
             throw LogParserException::forInvalidFile((string) $file, $type);
         }
 
@@ -99,9 +98,8 @@ class LogParser
                 $entry .= $line = $ofile->fgets();
 
                 // Double "\n" is separator.
-                if ($line == "\n") {
-                    $result = self::parseFileEntry($entry);
-                    if ($result != null) {
+                if ($line === "\n") {
+                    if ($result = self::parseFileEntry($entry)) {
                         yield $result;
                     }
 
@@ -137,7 +135,7 @@ class LogParser
         static $reThrownMatch = '~(?<type>.+?)(?:\((?<code>\d+?)\))?: *(?<message>.*?) at (?<file>.+?):(?<line>\d+?)~s';
 
         // Regular log entry.
-        if ($entry[0] == '[') {
+        if ($entry[0] === '[') {
             if (preg_match_names($reNormalMatch, $entry, $match)) {
                 $ret = array_apply($match, 'trim');
                 $ret['thrown'] = null;
@@ -146,7 +144,7 @@ class LogParser
                 $parseThrown ??= function ($content) use (&$parseThrown, $reThrownMatch) {
                     if (preg_match_names($reThrownMatch, $content, $match)) {
                         $thrown = array_apply($match, function ($v, $k) {
-                            return ($k == 'code' || $k == 'line') ? (int) $v : $v;
+                            return ($k === 'code' || $k === 'line') ? (int) $v : $v;
                         });
 
                         $lines = explode("\n", $content);
@@ -158,7 +156,7 @@ class LogParser
                                 $start = $match[1];
                                 break;
                             }
-                            if ($line && $line[0] == '#') {
+                            if ($line && $line[0] === '#') {
                                 $thrown['trace'][] = $line;
                             }
                         }
@@ -183,7 +181,7 @@ class LogParser
             }
         }
         // JSON log entry.
-        elseif ($entry[0] == '{') {
+        elseif ($entry[0] === '{') {
             $ret = json_decode($entry, true);
             if (json_last_error()) {
                 $ret = null;

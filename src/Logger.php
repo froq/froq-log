@@ -83,7 +83,7 @@ class Logger
     public final function setOption(string $option, mixed $value): self
     {
         // Special case of "level" option.
-        if ($option == 'level') {
+        if ($option === 'level') {
             $this->setLevel($value = (int) $value);
         }
 
@@ -184,6 +184,31 @@ class Logger
     }
 
     /**
+     * Check directory to ensure directory is created/exists, throw `LoggerException`
+     * if no directory option given yet or cannot create that directory when not exists.
+     *
+     * @param  string $directory
+     * @return void
+     * @throws froq\logger\LoggerException
+     */
+    protected function directoryCheck(string $directory): void
+    {
+        if (trim($directory) === '') {
+            throw new LoggerException(
+                'Log directory is empty yet, it must be given in constructor '.
+                'options or calling setOption() before log*() calls'
+            );
+        }
+
+        if (!dirmake($directory)) {
+            throw new LoggerException(
+                'Cannot create log directory %S [error: %s]',
+                [$directory, '@error']
+            );
+        }
+    }
+
+    /**
      * Prepare a `Throwable` message.
      *
      * @param  Throwable $e
@@ -222,31 +247,6 @@ class Logger
         }
 
         return $ret;
-    }
-
-    /**
-     * Check directory to ensure directory is created/exists, throw `LoggerException`
-     * if no directory option given yet or cannot create that directory when not exists.
-     *
-     * @param  string $directory
-     * @return void
-     * @throws froq\logger\LoggerException
-     */
-    protected function directoryCheck(string $directory): void
-    {
-        if (trim($directory) == '') {
-            throw new LoggerException(
-                'Log directory is empty yet, it must be given in constructor '.
-                'options or calling setOption() before log*() calls'
-            );
-        }
-
-        if (!dirmake($directory)) {
-            throw new LoggerException(
-                'Cannot create log directory %S [error: %s]',
-                [$directory, '@error']
-            );
-        }
     }
 
     /**
@@ -311,12 +311,12 @@ class Logger
         // Prepare file if not given.
         if (!$file) {
             $fileName ??= self::$date->format('Y-m-d');
-            if ($tag != '') {
+            if ($tag !== '') {
                 $fileName .= '-' . $tag;
             }
 
             // Because of permissions.
-            $file = (PHP_SAPI != 'cli-server')
+            $file = (PHP_SAPI !== 'cli-server')
                   ? sprintf('%s/%s.log', $directory, $fileName)
                   : sprintf('%s/%s-cli-server.log', $directory, $fileName);
 
@@ -359,7 +359,7 @@ class Logger
         $log .= "\n\n";
 
         // Prevent duplications.
-        if ($this->lastLog != $lastLog = md5($log)) {
+        if ($this->lastLog !== $lastLog = md5($log)) {
             $this->lastLog = $lastLog;
 
             $this->commit($file, $log);
@@ -396,7 +396,7 @@ class Logger
         if ($this->options['rotate']) {
             $glob = $this->options['directory'] . '/*.log';
             foreach (glob($glob) as $gfile) {
-                if ($gfile != $file) {
+                if ($gfile !== $file) {
                     (copy($gfile, 'compress.zlib://' . $gfile . '.gz') && unlink($gfile))
                         || throw new LoggerException('Log rotate failed [error: @error]');
                 }
