@@ -35,7 +35,6 @@ class LoggerOptions extends \Options
             'timeZone'   => 'UTC',
             'timeFormat' => 'D, d M Y H:i:s.u P',
             'json'       => false,
-            'pretty'     => false,
             'rotate'     => false,
         ];
 

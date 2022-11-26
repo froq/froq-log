@@ -184,25 +184,19 @@ class Logger
     }
 
     /**
-     * Prepare a Throwable message.
+     * Prepare a `Throwable` message.
      *
      * @param  Throwable $e
-     * @param  bool      $pretty
      * @param  bool      $verbose
      * @return array
-     * @since  4.1, 4.2
      */
-    public static function prepare(Throwable $e, bool $pretty, bool $verbose = false): array
+    protected static function prepare(Throwable $e, bool $verbose = false): array
     {
-        static $clean; // Dot all those PHP's ugly stuff..
-        $clean ??= fn($s, $p) => $p ? str_replace(['\\', '::', '->'], '.', $s) : $s;
-
-        $type = get_class($e);
-        if ($pretty) {
-            $type = $clean($type, true);
-        }
-
-        [$code, $file, $line, $message] = [$e->getCode(), $e->getFile(), $e->getLine(), $e->getMessage()];
+        [$type, $code, $file, $line, $message] = [
+            get_class_name($e, escape: true),
+            $e->getCode(), $e->getFile(),
+            $e->getLine(), $e->getMessage()
+        ];
 
         // Works if "options.json=true" only.
         if ($verbose) {
@@ -211,20 +205,20 @@ class Logger
                 'file'    => $file, 'line' => $line,
                 'message' => $message,
                 'string'  => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
-                'trace'   => array_map(fn($s) => preg_replace('~^#\d+ (.+)~', '\1', $clean($s, $pretty)),
+                'trace'   => array_map(fn($s) => preg_replace('~^#\d+ (.+)~', '\1', $s),
                     explode("\n", $e->getTraceAsString()))];
         } else {
             $ret = [
                 'string'  => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
-                'trace'   => array_map(fn($s) => $clean($s, $pretty), explode("\n", $e->getTraceAsString()))];
+                'trace'   => $e->getTraceAsString()];
         }
 
         // Append previous/cause stuff.
         if ($previous = $e->getPrevious()) {
-            $ret += ['previous' => self::prepare($previous, $pretty, $verbose)];
+            $ret += ['previous' => self::prepare($previous, $verbose)];
         }
         if (($e instanceof Error || $e instanceof Exception) && ($cause = $e->getCause())) {
-            $ret += ['cause' => self::prepare($cause, $pretty, $verbose)];
+            $ret += ['cause' => self::prepare($cause, $verbose)];
         }
 
         return $ret;
@@ -272,34 +266,37 @@ class Logger
             return false;
         }
 
-        [$directory, $file, $fileName, $tag, $json, $pretty, $format] = $this->options->select(
-            ['directory', 'file', 'fileName', 'tag', 'json', 'pretty', 'timeFormat']
+        [$directory, $file, $fileName, $tag, $json, $format] = $this->options->select(
+            ['directory', 'file', 'fileName', 'tag', 'json', 'timeFormat']
         );
 
-        $messageOrig = $message;
+        $isThrowable = $message instanceof Throwable;
 
-        if ($message instanceof Throwable) {
-            if ($pretty || $json) {
-                $message = $prepared = self::prepare($message, !!$pretty, !!$json);
-                $message = $json ? $message : $message['string'] . "\n" . join("\n", $message['trace']);
-                if (isset($prepared['previous']) && !$json) {
-                    $message .= "\nPrevious:\n" . $prepared['previous']['string']
-                        . "\n" . join("\n", $prepared['previous']['trace']);
-                }
-                if (isset($prepared['cause']) && !$json) {
-                    $message .= "\nCause:\n" . $prepared['cause']['string']
-                        . "\n" . join("\n", $prepared['cause']['trace']);
-                }
+        if ($isThrowable) {
+            if ($json) {
+                $message = self::prepare($message, true);
             } else {
-                $message = $prepared = self::prepare($message, !!$pretty);
-                $message = $message['string'] . "\n" . join("\n", $message['trace']);
+                $message = $prepared = self::prepare($message);
+                $message = $prepared['string'] . "\n" . $prepared['trace'];
                 if (isset($prepared['previous'])) {
-                    $message .= "\nPrevious:\n" . $prepared['previous']['string']
-                        . "\n" . join("\n", $prepared['previous']['trace']);
+                    $current = $prepared['previous'];
+                    while ($current) {
+                        $message .= "\nPrevious:\n" . $current['string']
+                                 . "\n" . $prepared['previous']['trace'];
+
+                        // Check / move next.
+                        $current = $current['previous'] ?? null;
+                    }
                 }
                 if (isset($prepared['cause'])) {
-                    $message .= "\nCause:\n" . $prepared['cause']['string']
-                        . "\n" . join("\n", $prepared['cause']['trace']);
+                    $current = $prepared['cause'];
+                    while ($current) {
+                        $message .= "\nCause:\n" . $current['string']
+                                 . "\n" . $current['trace'];
+
+                        // Check / move next.
+                        $current = $current['cause'] ?? null;
+                    }
                 }
             }
         } else {
@@ -346,7 +343,7 @@ class Logger
             );
         } else {
             // Regulate fields for LogParser parsing rules (@see LogParser.parseFileEntry()).
-            [$content, $thrown] = ($messageOrig instanceof Throwable) ? [null, $message] : [$message, null];
+            [$content, $thrown] = $isThrowable ? [null, $message] : [$message, null];
 
             // Eg: {"type":"ERROR", "date":"Sat, 07 Nov 2020 ..", "ip":"127...", "content":null, "thrown":{"type": ..
             $log = json_encode(
