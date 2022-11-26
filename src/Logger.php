@@ -311,7 +311,7 @@ class Logger
         // Prepare file if not given.
         if (!$file) {
             $fileName ??= self::$date->format('Y-m-d');
-            if ($tag !== '') {
+            if ($tag !== null) {
                 $fileName .= '-' . $tag;
             }
 
