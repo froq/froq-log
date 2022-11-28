@@ -194,17 +194,11 @@ class Logger
     protected function directoryCheck(string $directory): void
     {
         if (trim($directory) === '') {
-            throw new LoggerException(
-                'Log directory is empty yet, it must be given in constructor '.
-                'options or calling setOption() before log*() calls'
-            );
+            throw LoggerException::forEmptyDirectory();
         }
 
         if (!dirmake($directory)) {
-            throw new LoggerException(
-                'Cannot create log directory %S [error: %s]',
-                [$directory, '@error']
-            );
+            throw LoggerException::forCreateDirectoryFailed($directory);
         }
     }
 
@@ -381,8 +375,7 @@ class Logger
             $log = str_replace("\0", "\\0", $log);
         }
 
-        error_log($log, 3, $file)
-            || throw new LoggerException('Log commit failed [error: @error]');
+        error_log($log, 3, $file) || throw LoggerException::forCommitFailed();
     }
 
     /**
@@ -397,8 +390,8 @@ class Logger
             $glob = $this->options['directory'] . '/*.log';
             foreach (glob($glob) as $gfile) {
                 if ($gfile !== $file) {
-                    (copy($gfile, 'compress.zlib://' . $gfile . '.gz') && unlink($gfile))
-                        || throw new LoggerException('Log rotate failed [error: @error]');
+                    $okay = copy($gfile, 'compress.zlib://' . $gfile . '.gz') && unlink($gfile);
+                    $okay || throw LoggerException::forRotateFailed();
                 }
             }
         }
