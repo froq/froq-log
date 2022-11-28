@@ -197,8 +197,8 @@ class Logger
             throw LoggerException::forEmptyDirectory();
         }
 
-        if (!dirmake($directory)) {
-            throw LoggerException::forCreateDirectoryFailed($directory);
+        if (!@dirmake($directory)) {
+            throw LoggerException::forMakeDirectoryError($directory);
         }
     }
 
@@ -375,7 +375,7 @@ class Logger
             $log = str_replace("\0", "\\0", $log);
         }
 
-        error_log($log, 3, $file) || throw LoggerException::forCommitFailed();
+        error_log($log, 3, $file) || throw LoggerException::forCommitError();
     }
 
     /**
@@ -391,7 +391,7 @@ class Logger
             foreach (glob($glob) as $gfile) {
                 if ($gfile !== $file) {
                     $okay = copy($gfile, 'compress.zlib://' . $gfile . '.gz') && unlink($gfile);
-                    $okay || throw LoggerException::forRotateFailed();
+                    $okay || throw LoggerException::forRotateError();
                 }
             }
         }

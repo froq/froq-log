@@ -29,35 +29,32 @@ class LoggerException extends \froq\common\Exception
     }
 
     /**
-     * Create for create directory failed.
+     * Create for create directory error.
      *
      * @param  string $directory
      * @return static
      */
-    public static function forCreateDirectoryFailed(string $directory): static
+    public static function forMakeDirectoryError(string $directory): static
     {
-        return new static(
-            'Cannot create log directory %S [error: %s]',
-            [$directory, '@error'], extract: true
-        );
+        return new static('Cannot create log directory %S [error: @error]', $directory, extract: true);
     }
 
     /**
-     * Create for commit failed.
+     * Create for commit error.
      *
      * @return static
      */
-    public static function forCommitFailed(): static
+    public static function forCommitError(): static
     {
         return new static('Log commit failed [error: @error]', extract: true);
     }
 
     /**
-     * Create for rotate failed.
+     * Create for rotate error.
      *
      * @return static
      */
-    public static function forRotateFailed(): static
+    public static function forRotateError(): static
     {
         return new static('Log rotate failed [error: @error]', extract: true);
     }
