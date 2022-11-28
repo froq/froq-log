@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace froq\logger;
 
-use froq\common\{Error, Exception};
+use froq\common\interface\Thrownable;
 use froq\util\Util;
 use Stringable, Throwable, DateTime, DateTimeZone;
 
@@ -236,7 +236,7 @@ class Logger
         if ($previous = $e->getPrevious()) {
             $ret += ['previous' => self::prepare($previous, $verbose)];
         }
-        if (($e instanceof Error || $e instanceof Exception) && ($cause = $e->getCause())) {
+        if ($e instanceof Thrownable && ($cause = $e->getCause())) {
             $ret += ['cause' => self::prepare($cause, $verbose)];
         }
 
