@@ -217,6 +217,8 @@ class Logger
             $e->getLine(), $e->getMessage()
         ];
 
+        $message = trim($message);
+
         // Works if "options.json=true" only.
         if ($verbose) {
             $ret = [
@@ -227,6 +229,9 @@ class Logger
                 'trace'   => array_map(fn($s) => preg_replace('~^#\d+ (.+)~', '\1', $s),
                     explode("\n", $e->getTraceAsString()))];
         } else {
+            // Escape line feeds (for LogParser).
+            $message = addcslashes($message, "\r\n");
+
             $ret = [
                 'string'  => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
                 'trace'   => $e->getTraceAsString()];
@@ -295,6 +300,9 @@ class Logger
             }
         } else {
             $message = trim((string) $message);
+
+            // Escape line feeds (for LogParser).
+            $message = addcslashes($message, "\r\n");
         }
 
         // Use file's directory if file given but not directory given.
