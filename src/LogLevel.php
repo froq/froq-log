@@ -17,11 +17,8 @@ namespace froq\logger;
  */
 class LogLevel
 {
-    /**
-     * Levels.
-     * @const int
-     */
-    public final const NONE  = 0, ALL   = -1,
-                       ERROR = 1, WARN  = 2,
-                       INFO  = 4, DEBUG = 8;
+    /** Levels. */
+    public const NONE  = 0, ALL   = -1,
+                 ERROR = 1, WARN  = 2,
+                 INFO  = 4, DEBUG = 8;
 }
