@@ -54,7 +54,7 @@ class Logger
      * @return self
      * @since  5.0
      */
-    public final function setLevel(int $level): self
+    public function setLevel(int $level): self
     {
         $this->level = $level;
 
@@ -67,7 +67,7 @@ class Logger
      * @return int
      * @since  5.0
      */
-    public final function getLevel(): int
+    public function getLevel(): int
     {
         return $this->level;
     }
@@ -80,7 +80,7 @@ class Logger
      * @return self
      * @since  6.0
      */
-    public final function setOption(string $option, mixed $value): self
+    public function setOption(string $option, mixed $value): self
     {
         // Special case of "level" option.
         if ($option === 'level') {
@@ -100,7 +100,7 @@ class Logger
      * @return mixed
      * @since  6.0
      */
-    public final function getOption(string $option, mixed $default = null): mixed
+    public function getOption(string $option, mixed $default = null): mixed
     {
         return $this->options[$option] ?? $default;
     }
@@ -113,7 +113,7 @@ class Logger
      *
      * @return string|null
      */
-    public final function getFile(): string|null
+    public function getFile(): string|null
     {
         return $this->getOption('file');
     }
@@ -123,7 +123,7 @@ class Logger
      *
      * @return string|null
      */
-    public final function getDirectory(): string|null
+    public function getDirectory(): string|null
     {
         return $this->getOption('directory');
     }
@@ -134,7 +134,7 @@ class Logger
      * @param  string|Stringable $message
      * @return bool
      */
-    public final function log(string|Stringable $message): bool
+    public function log(string|Stringable $message): bool
     {
         return $this->write(LogLevel::ALL, null, $message);
     }
@@ -145,7 +145,7 @@ class Logger
      * @param  string|Stringable $message
      * @return bool
      */
-    public final function logError(string|Stringable $message): bool
+    public function logError(string|Stringable $message): bool
     {
         return $this->write(LogLevel::ERROR, null, $message);
     }
@@ -156,7 +156,7 @@ class Logger
      * @param  string|Stringable $message
      * @return bool
      */
-    public final function logWarn(string|Stringable $message): bool
+    public function logWarn(string|Stringable $message): bool
     {
         return $this->write(LogLevel::WARN, null, $message);
     }
@@ -167,7 +167,7 @@ class Logger
      * @param  string|Stringable $message
      * @return bool
      */
-    public final function logInfo(string|Stringable $message): bool
+    public function logInfo(string|Stringable $message): bool
     {
         return $this->write(LogLevel::INFO, null, $message);
     }
@@ -178,7 +178,7 @@ class Logger
      * @param  string|Stringable $message
      * @return bool
      */
-    public final function logDebug(string|Stringable $message): bool
+    public function logDebug(string|Stringable $message): bool
     {
         return $this->write(LogLevel::DEBUG, null, $message);
     }
