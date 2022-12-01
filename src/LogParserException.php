@@ -1,15 +1,13 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * Copyright (c) 2015 · Kerem Güneş
  * Apache License 2.0 · http://github.com/froq/froq-logger
  */
-declare(strict_types=1);
-
 namespace froq\logger;
 
 /**
  * @package froq\logger
- * @object  froq\logger\LogParserException
+ * @class   froq\logger\LogParserException
  * @author  Kerem Güneş
  * @since   7.0
  */

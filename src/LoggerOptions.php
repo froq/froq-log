@@ -1,17 +1,15 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * Copyright (c) 2015 · Kerem Güneş
  * Apache License 2.0 · http://github.com/froq/froq-logger
  */
-declare(strict_types=1);
-
 namespace froq\logger;
 
 /**
  * Logger options with defaults.
  *
  * @package froq\logger
- * @object  froq\logger\LoggerOptions
+ * @class   froq\logger\LoggerOptions
  * @author  Kerem Güneş
  * @since   6.0
  * @internal

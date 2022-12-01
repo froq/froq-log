@@ -1,10 +1,8 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * Copyright (c) 2015 · Kerem Güneş
  * Apache License 2.0 · http://github.com/froq/froq-logger
  */
-declare(strict_types=1);
-
 namespace froq\logger;
 
 use froq\common\interface\Thrownable;
@@ -15,22 +13,22 @@ use Stringable, Throwable, DateTime, DateTimeZone;
  * A logger class for logging and optionally rotating logs.
  *
  * @package froq\logger
- * @object  froq\logger\Logger
+ * @class   froq\logger\Logger
  * @author  Kerem Güneş
  * @since   1.0
  */
 class Logger
 {
-    /** @var int */
+    /** Log level. */
     private int $level;
 
-    /** @var DateTime */
+    /** Date/time instance. */
     private static DateTime $date;
 
-    /** @var froq\logger\LoggerOptions */
+    /** Logger options with defaults. */
     private LoggerOptions $options;
 
-    /** @var string */
+    /** Last log hash to prevent double logs. */
     private string $lastLog = '';
 
     /**
@@ -361,7 +359,7 @@ class Logger
         $log .= "\n\n";
 
         // Prevent duplications.
-        if ($this->lastLog !== $lastLog = md5($log)) {
+        if ($this->lastLog !== ($lastLog = md5($log))) {
             $this->lastLog = $lastLog;
 
             $this->commit($file, $log);

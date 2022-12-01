@@ -1,23 +1,21 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * Copyright (c) 2015 · Kerem Güneş
  * Apache License 2.0 · http://github.com/froq/froq-logger
  */
-declare(strict_types=1);
-
 namespace froq\logger;
 
 /**
  * Log parser class for parsing log and log archive files.
  *
  * @package froq\logger
- * @object  froq\logger\LogParser
+ * @class   froq\logger\LogParser
  * @author  Kerem Güneş
  * @since   7.0
  */
 class LogParser
 {
-    /** The target file. */
+    /** Log file to parse. */
     private string $file;
 
     /**

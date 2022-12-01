@@ -1,17 +1,15 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * Copyright (c) 2015 · Kerem Güneş
  * Apache License 2.0 · http://github.com/froq/froq-logger
  */
-declare(strict_types=1);
-
 namespace froq\logger;
 
 /**
  * Enum class for log levels.
  *
  * @package froq\logger
- * @object  froq\logger\LogLevel
+ * @class   froq\logger\LogLevel
  * @author  Kerem Güneş
  * @since   6.0
  */
