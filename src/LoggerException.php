@@ -13,11 +13,6 @@ namespace froq\logger;
  */
 class LoggerException extends \froq\common\Exception
 {
-    /**
-     * Create for empty directory.
-     *
-     * @return static
-     */
     public static function forEmptyDirectory(): static
     {
         return new static(
@@ -26,32 +21,19 @@ class LoggerException extends \froq\common\Exception
         );
     }
 
-    /**
-     * Create for make directory error.
-     *
-     * @param  string $directory
-     * @return static
-     */
     public static function forMakeDirectoryError(string $directory): static
     {
-        return new static('Cannot create log directory %S [error: @error]', $directory, extract: true);
+        return new static(
+            'Cannot create log directory %S [error: @error]',
+            $directory, extract: true
+        );
     }
 
-    /**
-     * Create for commit error.
-     *
-     * @return static
-     */
     public static function forCommitError(): static
     {
         return new static('Log commit failed [error: @error]', extract: true);
     }
 
-    /**
-     * Create for rotate error.
-     *
-     * @return static
-     */
     public static function forRotateError(): static
     {
         return new static('Log rotate failed [error: @error]', extract: true);
