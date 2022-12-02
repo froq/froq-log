@@ -22,4 +22,9 @@ class LogParserException extends \froq\common\Exception
     {
         return new static('Invalid file %q [type: %s]', [$file, $type]);
     }
+
+    public static function forCaughtThrowable(\Throwable $e): static
+    {
+        return new static($e, extract: true);
+    }
 }
