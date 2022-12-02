@@ -80,7 +80,7 @@ class LogParser
             $file = new \SplFileInfo($file);
             $type = $file->getType();
         } catch (\Throwable $e) {
-            throw LogParserException::forCaughtThrowable($e);
+            throw new LogParserException($e, extract: true);
         }
 
         if (!$file->isFile()) {
@@ -106,7 +106,7 @@ class LogParser
                 }
             }
         } catch (\Throwable $e) {
-            throw LogParserException::forCaughtThrowable($e);
+            throw new LogParserException($e, extract: true);
         }
 
         // Drop uncompressed file.

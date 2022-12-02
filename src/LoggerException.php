@@ -27,7 +27,7 @@ class LoggerException extends \froq\common\Exception
     }
 
     /**
-     * Create for create directory error.
+     * Create for make directory error.
      *
      * @param  string $directory
      * @return static
