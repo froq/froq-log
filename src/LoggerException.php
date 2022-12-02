@@ -23,10 +23,7 @@ class LoggerException extends \froq\common\Exception
 
     public static function forMakeDirectoryError(string $directory): static
     {
-        return new static(
-            'Cannot create log directory %S [error: @error]',
-            $directory, extract: true
-        );
+        return new static('Cannot create log directory %S [error: @error]', $directory, extract: true);
     }
 
     public static function forCommitError(): static
