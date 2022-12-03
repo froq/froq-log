@@ -1,9 +1,9 @@
 <?php declare(strict_types=1);
 /**
  * Copyright (c) 2015 · Kerem Güneş
- * Apache License 2.0 · http://github.com/froq/froq-logger
+ * Apache License 2.0 · http://github.com/froq/froq-log
  */
-namespace froq\logger;
+namespace froq\log;
 
 use froq\common\interface\Thrownable;
 use froq\util\Util;
@@ -12,8 +12,8 @@ use Stringable, Throwable, DateTime, DateTimeZone;
 /**
  * A logger class for logging and optionally rotating logs.
  *
- * @package froq\logger
- * @class   froq\logger\Logger
+ * @package froq\log
+ * @class   froq\log\Logger
  * @author  Kerem Güneş
  * @since   1.0
  */
@@ -187,7 +187,7 @@ class Logger
      *
      * @param  string $directory
      * @return void
-     * @throws froq\logger\LoggerException
+     * @throws froq\log\LoggerException
      */
     protected function directoryCheck(string $directory): void
     {
@@ -253,7 +253,7 @@ class Logger
      * @param  int               $level
      * @param  string|null       $type
      * @param  string|Stringable $message
-     * @causes froq\logger\LoggerException
+     * @causes froq\log\LoggerException
      * @return bool
      */
     protected function write(int $level, string|null $type, string|Stringable $message): bool
@@ -372,7 +372,7 @@ class Logger
     /**
      * Run commit process.
      *
-     * @throws froq\logger\LoggerException
+     * @throws froq\log\LoggerException
      */
     private function commit(string $file, string $log): void
     {
@@ -387,7 +387,7 @@ class Logger
     /**
      * Run rotate process.
      *
-     * @throws froq\logger\LoggerException
+     * @throws froq\log\LoggerException
      */
     private function rotate(string $file): void
     {

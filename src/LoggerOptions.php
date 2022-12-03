@@ -1,15 +1,15 @@
 <?php declare(strict_types=1);
 /**
  * Copyright (c) 2015 · Kerem Güneş
- * Apache License 2.0 · http://github.com/froq/froq-logger
+ * Apache License 2.0 · http://github.com/froq/froq-log
  */
-namespace froq\logger;
+namespace froq\log;
 
 /**
  * Logger options with defaults.
  *
- * @package froq\logger
- * @class   froq\logger\LoggerOptions
+ * @package froq\log
+ * @class   froq\log\LoggerOptions
  * @author  Kerem Güneş
  * @since   6.0
  * @internal
@@ -20,7 +20,7 @@ class LoggerOptions extends \Options
      * Create logger options with defaults.
      *
      * @param  array|null $options
-     * @return froq\logger\LoggerOptions
+     * @return froq\log\LoggerOptions
      */
     public static function create(array|null $options): LoggerOptions
     {

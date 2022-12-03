@@ -1,8 +1,8 @@
 {
-    "name": "froq/froq-logger",
-    "homepage": "http://github.com/froq/froq-logger",
-    "description": "Froq! Logger.",
-    "keywords": ["froq", "logger"],
+    "name": "froq/froq-log",
+    "homepage": "http://github.com/froq/froq-log",
+    "description": "Froq! Log.",
+    "keywords": ["froq", "log"],
     "license": "Apache-2.0",
     "authors": [{"name": "Kerem Güneş"}],
     "require": {

@@ -1,13 +1,13 @@
 <?php declare(strict_types=1);
 /**
  * Copyright (c) 2015 · Kerem Güneş
- * Apache License 2.0 · http://github.com/froq/froq-logger
+ * Apache License 2.0 · http://github.com/froq/froq-log
  */
-namespace froq\logger;
+namespace froq\log;
 
 /**
- * @package froq\logger
- * @class   froq\logger\LogParserException
+ * @package froq\log
+ * @class   froq\log\LogParserException
  * @author  Kerem Güneş
  * @since   7.0
  */

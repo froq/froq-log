@@ -1,15 +1,15 @@
 <?php declare(strict_types=1);
 /**
  * Copyright (c) 2015 · Kerem Güneş
- * Apache License 2.0 · http://github.com/froq/froq-logger
+ * Apache License 2.0 · http://github.com/froq/froq-log
  */
-namespace froq\logger;
+namespace froq\log;
 
 /**
  * Log parser class for parsing log and log archive files.
  *
- * @package froq\logger
- * @class   froq\logger\LogParser
+ * @package froq\log
+ * @class   froq\log\LogParser
  * @author  Kerem Güneş
  * @since   7.0
  */
@@ -53,8 +53,8 @@ class LogParser
      * Parse self file.
      *
      * @return Generator
-     * @throws froq\logger\LogParserException
-     * @causes froq\logger\LogParserException
+     * @throws froq\log\LogParserException
+     * @causes froq\log\LogParserException
      */
     public function parse(): \Generator
     {
@@ -67,7 +67,7 @@ class LogParser
      * Parse given file.
      *
      * @return Generator
-     * @throws froq\logger\LogParserException
+     * @throws froq\log\LogParserException
      */
     public static function parseFile(string $file): \Generator
     {
