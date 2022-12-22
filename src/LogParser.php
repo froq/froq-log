@@ -203,9 +203,9 @@ class LogParser
 
         $tmpFile = null;
 
-        if ($sfp =@ gzopen($file, 'rb')) {
+        if ($sfp = gzopen($file, 'rb')) {
             $tmp = format('%s/%s.log', tmp(), uuid());
-            if ($dfp =@ fopen($tmp, 'wb')) {
+            if ($dfp = fopen($tmp, 'wb')) {
                 $tmpFile = $tmp;
                 while (!gzeof($sfp)) {
                     fwrite($dfp, gzread($sfp, 2048));
