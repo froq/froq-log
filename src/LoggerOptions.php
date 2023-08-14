@@ -27,7 +27,7 @@ class LoggerOptions extends \Options
         static $optionsDefault = [
             'level'      => -1,   // All. Moved as property in v/5.0.
             'tag'        => null, // Be used in write() as file name appendix.
-            'directory'  => null, // Must be given in constructor options.
+            'directory'  => null, // Given in constructor or default=APP_DIR/var/log.
             'file'       => null, // File with full path.
             'fileName'   => null, // Be used in write() or created.
             'timeZone'   => 'UTC',
