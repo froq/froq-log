@@ -135,7 +135,7 @@ class LogParser
         // Regular log entry.
         if ($entry[0] === '[') {
             if (preg_match_names($reNormalMatch, $entry, $match)) {
-                $ret = array_apply($match, 'trim');
+                $ret = array_map('trim', $match);
                 $ret['thrown'] = null;
 
                 // Parse thrown recursively.
