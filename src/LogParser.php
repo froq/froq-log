@@ -1,23 +1,21 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * Copyright (c) 2015 · Kerem Güneş
- * Apache License 2.0 · http://github.com/froq/froq-logger
+ * Apache License 2.0 · http://github.com/froq/froq-log
  */
-declare(strict_types=1);
-
-namespace froq\logger;
+namespace froq\log;
 
 /**
  * Log parser class for parsing log and log archive files.
  *
- * @package froq\logger
- * @object  froq\logger\LogParser
+ * @package froq\log
+ * @class   froq\log\LogParser
  * @author  Kerem Güneş
- * @since   6.1
+ * @since   7.0
  */
 class LogParser
 {
-    /** The target file. */
+    /** Log file to parse. */
     private string $file;
 
     /**
@@ -55,13 +53,12 @@ class LogParser
      * Parse self file.
      *
      * @return Generator
-     * @throws froq\logger\LogParserException
-     * @causes froq\logger\LogParserException
+     * @throws froq\log\LogParserException
+     * @causes froq\log\LogParserException
      */
     public function parse(): \Generator
     {
-        $file = $this->getFile()
-            ?? throw LogParserException::forEmptyFile();
+        $file = $this->getFile() ?? throw LogParserException::forEmptyFile();
 
         return self::parseFile($file);
     }
@@ -70,10 +67,15 @@ class LogParser
      * Parse given file.
      *
      * @return Generator
-     * @throws froq\logger\LogParserException
+     * @throws froq\log\LogParserException
      */
     public static function parseFile(string $file): \Generator
     {
+        // Swap files temporarily.
+        if ($tmpFile = self::copyGzFileAsTmpFile($file)) {
+            $file = $tmpFile;
+        }
+
         try {
             $file = new \SplFileInfo($file);
             $type = $file->getType();
@@ -82,7 +84,7 @@ class LogParser
         }
 
         if (!$file->isFile()) {
-            $type = ($type == 'dir') ? 'directory' : ($type ?: 'unknown');
+            $type = ($type === 'dir') ? 'directory' : ($type ?: 'unknown');
             throw LogParserException::forInvalidFile((string) $file, $type);
         }
 
@@ -94,9 +96,8 @@ class LogParser
                 $entry .= $line = $ofile->fgets();
 
                 // Double "\n" is separator.
-                if ($line == "\n") {
-                    $result = self::parseFileEntry($entry);
-                    if ($result != null) {
+                if ($line === "\n") {
+                    if ($result = self::parseFileEntry($entry)) {
                         yield $result;
                     }
 
@@ -107,6 +108,9 @@ class LogParser
         } catch (\Throwable $e) {
             throw LogParserException::forCaughtThrowable($e);
         }
+
+        // Drop uncompressed file.
+        $tmpFile && unlink($tmpFile);
     }
 
     /**
@@ -129,16 +133,16 @@ class LogParser
         static $reThrownMatch = '~(?<type>.+?)(?:\((?<code>\d+?)\))?: *(?<message>.*?) at (?<file>.+?):(?<line>\d+?)~s';
 
         // Regular log entry.
-        if ($entry[0] == '[') {
+        if ($entry[0] === '[') {
             if (preg_match_names($reNormalMatch, $entry, $match)) {
-                $ret = array_apply($match, 'trim');
+                $ret = array_map('trim', $match);
                 $ret['thrown'] = null;
 
                 // Parse thrown recursively.
                 $parseThrown ??= function ($content) use (&$parseThrown, $reThrownMatch) {
                     if (preg_match_names($reThrownMatch, $content, $match)) {
                         $thrown = array_apply($match, function ($v, $k) {
-                            return ($k == 'code' || $k == 'line') ? (int) $v : $v;
+                            return ($k === 'code' || $k === 'line') ? (int) $v : $v;
                         });
 
                         $lines = explode("\n", $content);
@@ -150,7 +154,7 @@ class LogParser
                                 $start = $match[1];
                                 break;
                             }
-                            if ($line && $line[0] == '#') {
+                            if ($line && $line[0] === '#') {
                                 $thrown['trace'][] = $line;
                             }
                         }
@@ -174,8 +178,8 @@ class LogParser
                 $ret['thrown'] = $parseThrown($ret['content']);
             }
         }
-        // JSON log.
-        elseif ($entry[0] == '{') {
+        // JSON log entry.
+        elseif ($entry[0] === '{') {
             $ret = json_decode($entry, true);
             if (json_last_error()) {
                 $ret = null;
@@ -183,5 +187,34 @@ class LogParser
         }
 
         return $ret;
+    }
+
+    /**
+     * Copy file as a temporary file if it's a GZ file & return new file path.
+     */
+    private static function copyGzFileAsTmpFile(string $file): string|null
+    {
+        if (!file_exists($file)) {
+            return null;
+        }
+        if (!str_ends_with($file, '.gz')) {
+            return null;
+        }
+
+        $tmpFile = null;
+
+        if ($sfp = gzopen($file, 'rb')) {
+            $tmp = format('%s/%s.log', tmp(), uuid());
+            if ($dfp = fopen($tmp, 'wb')) {
+                $tmpFile = $tmp;
+                while (!gzeof($sfp)) {
+                    fwrite($dfp, gzread($sfp, 2048));
+                }
+                fclose($dfp);
+            }
+            gzclose($sfp);
+        }
+
+        return $tmpFile;
     }
 }

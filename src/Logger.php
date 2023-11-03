@@ -1,36 +1,34 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * Copyright (c) 2015 · Kerem Güneş
- * Apache License 2.0 · http://github.com/froq/froq-logger
+ * Apache License 2.0 · http://github.com/froq/froq-log
  */
-declare(strict_types=1);
+namespace froq\log;
 
-namespace froq\logger;
-
-use froq\common\{Error, Exception};
+use froq\common\interface\Thrownable;
 use froq\util\Util;
-use Throwable, DateTime, DateTimeZone;
+use Stringable, Throwable, DateTime, DateTimeZone;
 
 /**
  * A logger class for logging and optionally rotating logs.
  *
- * @package froq\logger
- * @object  froq\logger\Logger
+ * @package froq\log
+ * @class   froq\log\Logger
  * @author  Kerem Güneş
  * @since   1.0
  */
 class Logger
 {
-    /** @var int */
+    /** Log level. */
     private int $level;
 
-    /** @var DateTime */
+    /** Date/time instance. */
     private static DateTime $date;
 
-    /** @var froq\logger\LoggerOptions */
+    /** Logger options with defaults. */
     private LoggerOptions $options;
 
-    /** @var string */
+    /** Last log hash to prevent double logs. */
     private string $lastLog = '';
 
     /**
@@ -54,7 +52,7 @@ class Logger
      * @return self
      * @since  5.0
      */
-    public final function setLevel(int $level): self
+    public function setLevel(int $level): self
     {
         $this->level = $level;
 
@@ -67,7 +65,7 @@ class Logger
      * @return int
      * @since  5.0
      */
-    public final function getLevel(): int
+    public function getLevel(): int
     {
         return $this->level;
     }
@@ -80,10 +78,10 @@ class Logger
      * @return self
      * @since  6.0
      */
-    public final function setOption(string $option, mixed $value): self
+    public function setOption(string $option, mixed $value): self
     {
         // Special case of "level" option.
-        if ($option == 'level') {
+        if ($option === 'level') {
             $this->setLevel($value = (int) $value);
         }
 
@@ -100,7 +98,7 @@ class Logger
      * @return mixed
      * @since  6.0
      */
-    public final function getOption(string $option, mixed $default = null): mixed
+    public function getOption(string $option, mixed $default = null): mixed
     {
         return $this->options[$option] ?? $default;
     }
@@ -113,7 +111,7 @@ class Logger
      *
      * @return string|null
      */
-    public final function getFile(): string|null
+    public function getFile(): string|null
     {
         return $this->getOption('file');
     }
@@ -123,7 +121,7 @@ class Logger
      *
      * @return string|null
      */
-    public final function getDirectory(): string|null
+    public function getDirectory(): string|null
     {
         return $this->getOption('directory');
     }
@@ -131,10 +129,10 @@ class Logger
     /**
      * Log a trivial message (this method may be used for skipping leveled calls).
      *
-     * @param  string|Throwable $message
+     * @param  string|Stringable $message
      * @return bool
      */
-    public final function log(string|Throwable $message): bool
+    public function log(string|Stringable $message): bool
     {
         return $this->write(LogLevel::ALL, null, $message);
     }
@@ -142,10 +140,10 @@ class Logger
     /**
      * Log an error message.
      *
-     * @param  string|Throwable $message
+     * @param  string|Stringable $message
      * @return bool
      */
-    public final function logError(string|Throwable $message): bool
+    public function logError(string|Stringable $message): bool
     {
         return $this->write(LogLevel::ERROR, null, $message);
     }
@@ -153,10 +151,10 @@ class Logger
     /**
      * Log a warning message.
      *
-     * @param  string|Throwable $message
+     * @param  string|Stringable $message
      * @return bool
      */
-    public final function logWarn(string|Throwable $message): bool
+    public function logWarn(string|Stringable $message): bool
     {
         return $this->write(LogLevel::WARN, null, $message);
     }
@@ -164,10 +162,10 @@ class Logger
     /**
      * Log an info message.
      *
-     * @param  string|Throwable $message
+     * @param  string|Stringable $message
      * @return bool
      */
-    public final function logInfo(string|Throwable $message): bool
+    public function logInfo(string|Stringable $message): bool
     {
         return $this->write(LogLevel::INFO, null, $message);
     }
@@ -175,59 +173,12 @@ class Logger
     /**
      * Log a debug message.
      *
-     * @param  string|Throwable $message
+     * @param  string|Stringable $message
      * @return bool
      */
-    public final function logDebug(string|Throwable $message): bool
+    public function logDebug(string|Stringable $message): bool
     {
         return $this->write(LogLevel::DEBUG, null, $message);
-    }
-
-    /**
-     * Prepare a Throwable message.
-     *
-     * @param  Throwable $e
-     * @param  bool      $pretty
-     * @param  bool      $verbose
-     * @return array
-     * @since  4.1, 4.2
-     */
-    public static function prepare(Throwable $e, bool $pretty, bool $verbose = false): array
-    {
-        static $clean; // Dot all those PHP's ugly stuff..
-        $clean ??= fn($s, $p) => $p ? str_replace(['\\', '::', '->'], '.', $s) : $s;
-
-        $type = get_class($e);
-        if ($pretty) {
-            $type = $clean($type, true);
-        }
-
-        [$code, $file, $line, $message] = [$e->getCode(), $e->getFile(), $e->getLine(), $e->getMessage()];
-
-        // Works if "options.json=true" only.
-        if ($verbose) {
-            $ret = [
-                'type'    => $type, 'code' => $code,
-                'file'    => $file, 'line' => $line,
-                'message' => $message,
-                'string'  => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
-                'trace'   => array_map(fn($s) => preg_replace('~^#\d+ (.+)~', '\1', $clean($s, $pretty)),
-                    explode("\n", $e->getTraceAsString()))];
-        } else {
-            $ret = [
-                'string'  => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
-                'trace'   => array_map(fn($s) => $clean($s, $pretty), explode("\n", $e->getTraceAsString()))];
-        }
-
-        // Append previous/cause stuff.
-        if ($previous = $e->getPrevious()) {
-            $ret += ['previous' => self::prepare($previous, $pretty, $verbose)];
-        }
-        if (($e instanceof Error || $e instanceof Exception) && ($cause = $e->getCause())) {
-            $ret += ['cause' => self::prepare($cause, $pretty, $verbose)];
-        }
-
-        return $ret;
     }
 
     /**
@@ -236,74 +187,120 @@ class Logger
      *
      * @param  string $directory
      * @return void
-     * @throws froq\logger\LoggerException
+     * @throws froq\log\LoggerException
      */
     protected function directoryCheck(string $directory): void
     {
-        if (trim($directory) == '') {
-            throw new LoggerException(
-                'Log directory is empty yet, it must be given in constructor '.
-                'options or calling setOption() before log*() calls'
-            );
+        if (trim($directory) === '') {
+            throw LoggerException::forEmptyDirectory();
         }
 
-        if (!dirmake($directory)) {
-            throw new LoggerException(
-                'Cannot create log directory %S [error: %s]',
-                [$directory, '@error']
-            );
+        if (!@dirmake($directory)) {
+            throw LoggerException::forMakeDirectoryError($directory);
         }
+    }
+
+    /**
+     * Prepare a `Throwable` message.
+     *
+     * @param  Throwable $e
+     * @param  bool      $verbose
+     * @return array
+     */
+    protected static function prepare(Throwable $e, bool $verbose = false): array
+    {
+        [$type, $code, $file, $line, $message] = [
+            get_class_name($e, escape: true),
+            $e->getCode(), $e->getFile(),
+            $e->getLine(), $e->getMessage()
+        ];
+
+        $message = trim($message);
+
+        // Works if "options.json=true" only.
+        if ($verbose) {
+            $ret = [
+                'type'    => $type, 'code' => $code,
+                'file'    => $file, 'line' => $line,
+                'message' => $message,
+                'string'  => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
+                'trace'   => array_map(fn($s) => preg_replace('~^#\d+ (.+)~', '\1', $s),
+                    explode("\n", $e->getTraceAsString()))];
+        } else {
+            // Escape line feeds (for LogParser).
+            $message = addcslashes($message, "\r\n");
+
+            $ret = [
+                'string'  => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
+                'trace'   => $e->getTraceAsString()];
+        }
+
+        // Append previous/cause stuff.
+        if ($previous = $e->getPrevious()) {
+            $ret += ['previous' => self::prepare($previous, $verbose)];
+        }
+        if ($e instanceof Thrownable && ($cause = $e->getCause())) {
+            $ret += ['cause' => self::prepare($cause, $verbose)];
+        }
+
+        return $ret;
     }
 
     /**
      * Write a trivial or leveled message to current log file, cause `LoggerException`
      * if error_log() or "logrotate" process fails.
      *
-     * @param  int              $level
-     * @param  string|null      $type
-     * @param  string|Throwable $message
-     * @causes froq\logger\LoggerException
+     * @param  int               $level
+     * @param  string|null       $type
+     * @param  string|Stringable $message
+     * @causes froq\log\LoggerException
      * @return bool
      */
-    protected function write(int $level, string|null $type, string|Throwable $message): bool
+    protected function write(int $level, string|null $type, string|Stringable $message): bool
     {
         // No log?
         if (($level > -1) && (!$level || !($level & $this->level))) {
             return false;
         }
 
-        [$directory, $file, $fileName, $tag, $json, $pretty, $format] = $this->options->select(
-            ['directory', 'file', 'fileName', 'tag', 'json', 'pretty', 'timeFormat']
+        [$directory, $file, $fileName, $tag, $json, $format] = $this->options->select(
+            ['directory', 'file', 'fileName', 'tag', 'json', 'timeFormat']
         );
 
-        $messageOrig = $message;
+        $isThrowable = $message instanceof Throwable;
 
-        if (is_string($message)) {
-            $message = trim($message);
-        } else {
-            if ($pretty || $json) {
-                $message = $prepared = self::prepare($message, !!$pretty, !!$json);
-                $message = $json ? $message : $message['string'] . "\n" . join("\n", $message['trace']);
-                if (isset($prepared['previous']) && !$json) {
-                    $message .= "\nPrevious:\n" . $prepared['previous']['string']
-                        . "\n" . join("\n", $prepared['previous']['trace']);
-                }
-                if (isset($prepared['cause']) && !$json) {
-                    $message .= "\nCause:\n" . $prepared['cause']['string']
-                        . "\n" . join("\n", $prepared['cause']['trace']);
-                }
+        if ($isThrowable) {
+            if ($json) {
+                $message = self::prepare($message, true);
             } else {
-                $message = $prepared = self::prepare($message, !!$pretty);
-                $message = $message['string'] . "\n" . join("\n", $message['trace']);
+                $message = $prepared = self::prepare($message);
+                $message = $prepared['string'] . "\n" . $prepared['trace'];
                 if (isset($prepared['previous'])) {
-                    $message .= "\nPrevious:\n" . $prepared['previous']['string']
-                        . "\n" . join("\n", $prepared['previous']['trace']);
+                    $current = $prepared['previous'];
+                    while ($current) {
+                        $message .= "\nPrevious:\n" . $current['string']
+                                 . "\n" . $prepared['previous']['trace'];
+
+                        // Check / move next.
+                        $current = $current['previous'] ?? null;
+                    }
                 }
                 if (isset($prepared['cause'])) {
-                    $message .= "\nCause:\n" . $prepared['cause']['string']
-                        . "\n" . join("\n", $prepared['cause']['trace']);
+                    $current = $prepared['cause'];
+                    while ($current) {
+                        $message .= "\nCause:\n" . $current['string']
+                                 . "\n" . $current['trace'];
+
+                        // Check / move next.
+                        $current = $current['cause'] ?? null;
+                    }
                 }
             }
+        } else {
+            $message = trim((string) $message);
+
+            // Escape line feeds (for LogParser).
+            $message = addcslashes($message, "\r\n");
         }
 
         // Use file's directory if file given but not directory given.
@@ -314,12 +311,12 @@ class Logger
         // Prepare file if not given.
         if (!$file) {
             $fileName ??= self::$date->format('Y-m-d');
-            if ($tag != '') {
+            if ($tag !== null) {
                 $fileName .= '-' . $tag;
             }
 
             // Because of permissions.
-            $file = (PHP_SAPI != 'cli-server')
+            $file = (PHP_SAPI !== 'cli-server')
                   ? sprintf('%s/%s.log', $directory, $fileName)
                   : sprintf('%s/%s-cli-server.log', $directory, $fileName);
 
@@ -346,7 +343,7 @@ class Logger
             );
         } else {
             // Regulate fields for LogParser parsing rules (@see LogParser.parseFileEntry()).
-            [$content, $thrown] = ($messageOrig instanceof Throwable) ? [null, $message] : [$message, null];
+            [$content, $thrown] = $isThrowable ? [null, $message] : [$message, null];
 
             // Eg: {"type":"ERROR", "date":"Sat, 07 Nov 2020 ..", "ip":"127...", "content":null, "thrown":{"type": ..
             $log = json_encode(
@@ -362,7 +359,7 @@ class Logger
         $log .= "\n\n";
 
         // Prevent duplications.
-        if ($this->lastLog != $lastLog = md5($log)) {
+        if ($this->lastLog !== ($lastLog = md5($log))) {
             $this->lastLog = $lastLog;
 
             $this->commit($file, $log);
@@ -375,7 +372,7 @@ class Logger
     /**
      * Run commit process.
      *
-     * @throws froq\logger\LoggerException
+     * @throws froq\log\LoggerException
      */
     private function commit(string $file, string $log): void
     {
@@ -384,14 +381,13 @@ class Logger
             $log = str_replace("\0", "\\0", $log);
         }
 
-        error_log($log, 3, $file)
-            || throw new LoggerException('Log commit failed [error: @error]');
+        error_log($log, 3, $file) || throw LoggerException::forCommitError();
     }
 
     /**
      * Run rotate process.
      *
-     * @throws froq\logger\LoggerException
+     * @throws froq\log\LoggerException
      */
     private function rotate(string $file): void
     {
@@ -399,9 +395,9 @@ class Logger
         if ($this->options['rotate']) {
             $glob = $this->options['directory'] . '/*.log';
             foreach (glob($glob) as $gfile) {
-                if ($gfile != $file) {
-                    (copy($gfile, 'compress.zlib://' . $gfile . '.gz') && unlink($gfile))
-                        || throw new LoggerException('Log rotate failed [error: @error]');
+                if ($gfile !== $file) {
+                    $okay = copy($gfile, 'compress.zlib://' . $gfile . '.gz') && unlink($gfile);
+                    $okay || throw LoggerException::forRotateError();
                 }
             }
         }

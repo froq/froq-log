@@ -1,13 +1,13 @@
 {
-    "name": "froq/froq-logger",
-    "homepage": "http://github.com/froq/froq-logger",
-    "description": "Froq! Logger.",
-    "keywords": ["froq", "logger"],
+    "name": "froq/froq-log",
+    "homepage": "http://github.com/froq/froq-log",
+    "description": "Froq! Log.",
+    "keywords": ["froq", "log"],
     "license": "Apache-2.0",
     "authors": [{"name": "Kerem Güneş"}],
     "require": {
-        "php": "^8.1",
-        "froq/froq-common": "^6.0"
+        "php": "^8.2",
+        "froq/froq-common": "^7.0"
     },
     "autoload": {
         "classmap": ["src/"]
