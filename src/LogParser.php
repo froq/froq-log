@@ -52,7 +52,7 @@ class LogParser
     /**
      * Parse self file.
      *
-     * @return Generator
+     * @return Generator<array|null>
      * @throws froq\log\LogParserException
      * @causes froq\log\LogParserException
      */
@@ -66,7 +66,7 @@ class LogParser
     /**
      * Parse given file.
      *
-     * @return Generator
+     * @return Generator<array|null>
      * @throws froq\log\LogParserException
      */
     public static function parseFile(string $file): \Generator
@@ -121,12 +121,12 @@ class LogParser
      */
     public static function parseFileEntry(string $entry): array|null
     {
-        $ret = [];
-
         $entry = trim($entry);
         if (!$entry) {
-            return $ret;
+            return null;
         }
+
+        $ret = null;
 
         static $parseThrown;
         static $reNormalMatch = '~\[(?<type>.+)\] (?<date>.+) \| (?<ip>.+) \| *(?<content>.*)~s';
@@ -194,17 +194,17 @@ class LogParser
      */
     private static function copyGzFileAsTmpFile(string $file): string|null
     {
-        if (!file_exists($file)) {
+        if (!str_ends_with($file, '.gz')) {
             return null;
         }
-        if (!str_ends_with($file, '.gz')) {
+        if (!file_exists($file)) {
             return null;
         }
 
         $tmpFile = null;
 
         if ($sfp = gzopen($file, 'rb')) {
-            $tmp = format('%s/%s.log', tmp(), uuid());
+            $tmp = sprintf('%s/%s.log', tmp(), uuid());
             if ($dfp = fopen($tmp, 'wb')) {
                 $tmpFile = $tmp;
                 while (!gzeof($sfp)) {

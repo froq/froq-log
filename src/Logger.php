@@ -217,22 +217,26 @@ class Logger
 
         $message = trim($message);
 
-        // Works if "options.json=true" only.
+        // Only works if options.json=true.
         if ($verbose) {
             $ret = [
                 'type'    => $type, 'code' => $code,
                 'file'    => $file, 'line' => $line,
                 'message' => $message,
                 'string'  => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
-                'trace'   => array_map(fn($s) => preg_replace('~^#\d+ (.+)~', '\1', $s),
-                    explode("\n", $e->getTraceAsString()))];
+                'trace'   => array_map(
+                    fn($s) => preg_replace('~^#\d+ (.+)~', '\1', $s), // Remove line nums.
+                    explode("\n", $e->getTraceAsString())
+                )
+            ];
         } else {
             // Escape line feeds (for LogParser).
             $message = addcslashes($message, "\r\n");
 
             $ret = [
-                'string'  => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
-                'trace'   => $e->getTraceAsString()];
+                'string' => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
+                'trace'  => $e->getTraceAsString()
+            ];
         }
 
         // Append previous/cause stuff.
@@ -253,8 +257,8 @@ class Logger
      * @param  int               $level
      * @param  string|null       $type
      * @param  string|Stringable $message
-     * @causes froq\log\LoggerException
      * @return bool
+     * @causes froq\log\LoggerException
      */
     protected function write(int $level, string|null $type, string|Stringable $message): bool
     {
@@ -263,7 +267,7 @@ class Logger
             return false;
         }
 
-        [$directory, $file, $fileName, $tag, $json, $format] = $this->options->select(
+        [$directory, $file, $fileName, $tag, $json, $timeFormat] = $this->options->select(
             ['directory', 'file', 'fileName', 'tag', 'json', 'timeFormat']
         );
 
@@ -333,7 +337,7 @@ class Logger
         };
 
         $ip   = Util::getClientIp() ?: '-';
-        $date = self::$date->format($format);
+        $date = self::$date->format($timeFormat);
 
         if (!$json) {
             // Eg: [ERROR] Sat, 31 Oct 2020 .. | 127.0.0.1 | Error(0): ..
