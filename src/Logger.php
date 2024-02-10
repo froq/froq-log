@@ -397,12 +397,21 @@ class Logger
     {
         // Mimic "logrotate" process.
         if ($this->options['rotate']) {
-            $glob = $this->options['directory'] . '/*.log';
-            foreach (glob($glob) as $gfile) {
-                if ($gfile !== $file) {
-                    $okay = copy($gfile, 'compress.zlib://' . $gfile . '.gz') && unlink($gfile);
-                    $okay || throw LoggerException::forRotateError();
+            $pattern = $this->options['directory'] . '/*.log';
+
+            foreach (glob($pattern, GLOB_NOSORT) as $gfile) {
+                if ($gfile === $file) {
+                    continue;
                 }
+
+                $gzfile = $gfile . '.gz';
+
+                if (is_file($gzfile) && !unlink($gzfile)) {
+                    continue;
+                }
+
+                $okay = copy($gfile, 'compress.zlib://' . $gzfile) && unlink($gfile);
+                $okay || throw LoggerException::forRotateError();
             }
         }
     }
