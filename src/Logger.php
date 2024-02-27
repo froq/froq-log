@@ -5,7 +5,7 @@
  */
 namespace froq\log;
 
-use froq\common\interface\Thrownable;
+use froq\common\Error;
 use froq\util\Util;
 use Stringable, Throwable, DateTime, DateTimeZone;
 
@@ -203,49 +203,34 @@ class Logger
     /**
      * Prepare a `Throwable` message.
      *
-     * @param  Throwable $e
-     * @param  bool      $verbose
+     * @param  array|Throwable $e
+     * @param  bool            $json
      * @return array
      */
-    protected static function prepare(Throwable $e, bool $verbose = false): array
+    protected static function prepare(array|Throwable $e, bool $json = false): array
     {
-        [$type, $code, $file, $line, $message] = [
-            get_class_name($e, escape: true),
-            $e->getCode(), $e->getFile(),
-            $e->getLine(), $e->getMessage()
-        ];
+        $debug = is_array($e) ? $e : Error::debug($e, withTrace: false, withTraceString: true);
 
-        $message = trim($message);
-
-        // Only works if options.json=true.
-        if ($verbose) {
+        if ($json) {
+            // Requires options.json=true.
             $ret = [
-                'type'    => $type, 'code' => $code,
-                'file'    => $file, 'line' => $line,
-                'message' => $message,
-                'string'  => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
-                'trace'   => array_map(
-                    fn($s) => preg_replace('~^#\d+ (.+)~', '\1', $s), // Remove line nums.
-                    explode("\n", $e->getTraceAsString())
+                'class'   => $debug['class'],   'code'   => $debug['code'],
+                'file'    => $debug['file'],    'line'   => $debug['line'],
+                'message' => $debug['message'], 'string' => $debug['string'],
+                'trace'   => array_map( // Remove line nums.
+                    fn($s) => preg_replace('~^#\d+ (.+)~', '\1', $s),
+                    explode("\n", $debug['traceString'])
                 )
             ];
         } else {
             // Escape line feeds (for LogParser).
-            $message = addcslashes($message, "\r\n");
+            $debug['string'] = addcslashes($debug['string'], "\r\n");
 
-            $ret = [
-                'string' => sprintf('%s(%s): %s at %s:%s', $type, $code, $message, $file, $line),
-                'trace'  => $e->getTraceAsString()
-            ];
+            $ret = ['string' => $debug['string'], 'trace'  => $debug['traceString']];
         }
 
-        // Append previous/cause stuff.
-        if ($previous = $e->getPrevious()) {
-            $ret += ['previous' => self::prepare($previous, $verbose)];
-        }
-        if ($e instanceof Thrownable && ($cause = $e->getCause())) {
-            $ret += ['cause' => self::prepare($cause, $verbose)];
-        }
+        $ret['cause'] = $debug['cause'] ? self::prepare($debug['cause'], $json) : null;
+        $ret['previous'] = $debug['previous'] ? self::prepare($debug['previous'], $json) : null;
 
         return $ret;
     }
@@ -274,28 +259,30 @@ class Logger
         $isThrowable = $message instanceof Throwable;
 
         if ($isThrowable) {
-            if ($json) {
-                $message = self::prepare($message, true);
-            } else {
-                $message = $prepared = self::prepare($message);
-                $message = $prepared['string'] . "\n" . $prepared['trace'];
-                if (isset($prepared['previous'])) {
+            $prepared = self::prepare($message, !!$json);
+
+            if (!$json) {
+                // Escape line feeds (for LogParser).
+                $message = addcslashes($prepared['string'], "\r\n");
+
+                $message .= "\n" . $prepared['trace'];
+
+                if ($prepared['previous']) {
                     $current = $prepared['previous'];
                     while ($current) {
                         $message .= "\nPrevious:\n" . $current['string']
                                  . "\n" . $prepared['previous']['trace'];
 
-                        // Check / move next.
                         $current = $current['previous'] ?? null;
                     }
                 }
-                if (isset($prepared['cause'])) {
+
+                if ($prepared['cause']) {
                     $current = $prepared['cause'];
                     while ($current) {
                         $message .= "\nCause:\n" . $current['string']
                                  . "\n" . $current['trace'];
 
-                        // Check / move next.
                         $current = $current['cause'] ?? null;
                     }
                 }

@@ -130,7 +130,7 @@ class LogParser
 
         static $parseThrown;
         static $reNormalMatch = '~\[(?<type>.+)\] (?<date>.+) \| (?<ip>.+) \| *(?<content>.*)~s';
-        static $reThrownMatch = '~(?<type>.+?)(?:\((?<code>\d+?)\))?: *(?<message>.*?) at (?<file>.+?):(?<line>\d+?)~s';
+        static $reThrownMatch = '~(?<class>.+?)(?:\((?<code>\d+?)\))?: *(?<message>.*?) @ (?<file>.+?):(?<line>\d+?)~s';
 
         // Regular log entry.
         if ($entry[0] === '[') {
