@@ -5,8 +5,7 @@
  */
 namespace froq\log;
 
-use froq\common\Error;
-use froq\util\Util;
+use froq\util\{Util, Debugger};
 use Stringable, Throwable, DateTime, DateTimeZone;
 
 /**
@@ -209,7 +208,7 @@ class Logger
      */
     protected static function prepare(array|Throwable $e, bool $json = false): array
     {
-        $debug = is_array($e) ? $e : Error::debug($e, withTrace: false, withTraceString: true);
+        $debug = is_array($e) ? $e : Debugger::debug($e, withTrace: false, withTraceString: true);
 
         if ($json) {
             // Requires options.json=true.
