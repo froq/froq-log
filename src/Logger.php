@@ -226,7 +226,7 @@ class Logger
             // Escape line feeds (for LogParser).
             $debug['string'] = addcslashes($debug['string'], "\r\n");
 
-            $ret = ['string' => $debug['string'], 'trace'  => $debug['traceString']];
+            $ret = ['string' => $debug['string'], 'trace' => $debug['traceString']];
         }
 
         $ret['cause'] = $debug['cause'] ? self::prepare($debug['cause'], $json) : null;
@@ -273,7 +273,7 @@ class Logger
                         $message .= "\nPrevious:\n" . $current['string']
                                  . "\n" . $prepared['previous']['trace'];
 
-                        $current = $current['previous'] ?? null;
+                        $current = $current['previous'];
                     }
                 }
 
@@ -283,7 +283,7 @@ class Logger
                         $message .= "\nCause:\n" . $current['string']
                                  . "\n" . $current['trace'];
 
-                        $current = $current['cause'] ?? null;
+                        $current = $current['cause'];
                     }
                 }
             }
