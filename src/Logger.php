@@ -392,6 +392,7 @@ class Logger
 
                 $gzfile = $gfile . '.gz';
 
+                // If GZ file exists, copy() will fail.
                 if (is_file($gzfile) && !unlink($gzfile)) {
                     continue;
                 }
