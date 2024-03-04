@@ -208,24 +208,20 @@ class Logger
      */
     protected static function prepare(array|Throwable $e, bool $json = false): array
     {
-        $debug = is_array($e) ? $e : Debugger::debug($e, withTrace: false, withTraceString: true);
+        $debug = is_array($e) ? $e : Debugger::debug($e, withTracePath: true);
 
         if ($json) {
-            // Requires options.json=true.
             $ret = [
                 'class'   => $debug['class'],   'code'   => $debug['code'],
                 'file'    => $debug['file'],    'line'   => $debug['line'],
                 'message' => $debug['message'], 'string' => $debug['string'],
-                'trace'   => array_map( // Remove line nums.
-                    fn($s) => preg_replace('~^#\d+ (.+)~', '\1', $s),
-                    explode("\n", $debug['traceString'])
-                )
+                'trace'   => $debug['tracePath']
             ];
         } else {
             // Escape line feeds (for LogParser).
             $debug['string'] = addcslashes($debug['string'], "\r\n");
 
-            $ret = ['string' => $debug['string'], 'trace' => $debug['traceString']];
+            $ret = ['string' => $debug['string'], 'trace' => $debug['tracePath']];
         }
 
         $ret['cause'] = $debug['cause'] ? self::prepare($debug['cause'], $json) : null;
@@ -266,16 +262,6 @@ class Logger
 
                 $message .= "\n" . $prepared['trace'];
 
-                if ($prepared['previous']) {
-                    $current = $prepared['previous'];
-                    while ($current) {
-                        $message .= "\nPrevious:\n" . $current['string']
-                                 . "\n" . $prepared['previous']['trace'];
-
-                        $current = $current['previous'];
-                    }
-                }
-
                 if ($prepared['cause']) {
                     $current = $prepared['cause'];
                     while ($current) {
@@ -283,6 +269,16 @@ class Logger
                                  . "\n" . $current['trace'];
 
                         $current = $current['cause'];
+                    }
+                }
+
+                if ($prepared['previous']) {
+                    $current = $prepared['previous'];
+                    while ($current) {
+                        $message .= "\nPrevious:\n" . $current['string']
+                                 . "\n" . $prepared['previous']['trace'];
+
+                        $current = $current['previous'];
                     }
                 }
             }
@@ -333,16 +329,10 @@ class Logger
             );
         } else {
             // Regulate fields for LogParser parsing rules (@see LogParser.parseFileEntry()).
-            [$content, $thrown] = $isThrowable ? [null, $message] : [$message, null];
+            [$content, $thrown] = $isThrowable ? [null, self::prepare($message)] : [$message, null];
 
             // Eg: {"type":"ERROR", "date":"Sat, 07 Nov 2020 ..", "ip":"127...", "content":null, "thrown":{"type": ..
-            $log = json_encode(
-                [
-                    'type' => $type, 'date' => $date, 'ip' => $ip,
-                    'content' => $content, 'thrown' => $thrown
-                ],
-                JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
-            );
+            $log = json_serialize(['type' => $type, 'date' => $date, 'ip' => $ip, 'content' => $content, 'thrown' => $thrown]);
         }
 
         // Separator for the LogParser.
