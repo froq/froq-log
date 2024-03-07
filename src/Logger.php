@@ -6,7 +6,7 @@
 namespace froq\log;
 
 use froq\util\{Util, Debugger};
-use Stringable, Throwable, DateTime, DateTimeZone;
+use DateTime, DateTimeZone, Stringable, Throwable;
 
 /**
  * A logger class for logging and optionally rotating logs.
