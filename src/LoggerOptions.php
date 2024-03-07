@@ -33,7 +33,9 @@ class LoggerOptions extends \Options
             'timeZone'   => 'UTC',
             'timeFormat' => 'D, d M Y H:i:s.u P',
             'json'       => false,
+            'jsonIndent' => null, // True or int.
             'rotate'     => false,
+            'rotateTime' => null, // Between 1-22, default=22 if "rotate" is true.
         ];
 
         // Create & filter base options.

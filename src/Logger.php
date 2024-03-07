@@ -208,7 +208,9 @@ class Logger
      */
     protected static function prepare(array|Throwable $e, bool $json = false): array
     {
-        $debug = is_array($e) ? $e : Debugger::debug($e, withTracePath: true);
+        $debug = is_array($e) ? $e : Debugger::debug(
+            $e, withTracePath: $json, withTraceString: !$json
+        );
 
         if ($json) {
             $ret = [
@@ -221,7 +223,7 @@ class Logger
             // Escape line feeds (for LogParser).
             $debug['string'] = addcslashes($debug['string'], "\r\n");
 
-            $ret = ['string' => $debug['string'], 'trace' => $debug['tracePath']];
+            $ret = ['string' => $debug['string'], 'trace' => $debug['traceString']];
         }
 
         $ret['cause'] = $debug['cause'] ? self::prepare($debug['cause'], $json) : null;
@@ -242,13 +244,13 @@ class Logger
      */
     protected function write(int $level, string|null $type, string|Stringable $message): bool
     {
-        // No log?
+        // If no log by level, just skip write action.
         if (($level > -1) && (!$level || !($level & $this->level))) {
             return false;
         }
 
-        [$directory, $file, $fileName, $tag, $json, $timeFormat] = $this->options->select(
-            ['directory', 'file', 'fileName', 'tag', 'json', 'timeFormat']
+        [$directory, $file, $fileName, $tag, $json, $jsonIndent, $timeFormat] = $this->options->select(
+            ['directory', 'file', 'fileName', 'tag', 'json', 'jsonIndent', 'timeFormat']
         );
 
         $isThrowable = $message instanceof Throwable;
@@ -329,10 +331,13 @@ class Logger
             );
         } else {
             // Regulate fields for LogParser parsing rules (@see LogParser.parseFileEntry()).
-            [$content, $thrown] = $isThrowable ? [null, self::prepare($message)] : [$message, null];
+            [$content, $thrown] = $isThrowable ? [null, self::prepare($message, !!$json)] : [$message, null];
 
-            // Eg: {"type":"ERROR", "date":"Sat, 07 Nov 2020 ..", "ip":"127...", "content":null, "thrown":{"type": ..
-            $log = json_serialize(['type' => $type, 'date' => $date, 'ip' => $ip, 'content' => $content, 'thrown' => $thrown]);
+            $log = json_serialize(
+                // Eg: {"type":"ERROR", "date":"Sat, 07 Nov 2020 ..", "ip":"127...", "content":null, "thrown":{"type": ..
+                ['type' => $type, 'date' => $date, 'ip' => $ip, 'content' => $content, 'thrown' => $thrown],
+                indent: is_bool($jsonIndent) || is_int($jsonIndent) ? $jsonIndent : null
+            );
         }
 
         // Separator for the LogParser.
@@ -373,6 +378,15 @@ class Logger
     {
         // Mimic "logrotate" process.
         if ($this->options['rotate']) {
+            $now = gmdate('H');
+
+            // Possible between 22 pm as default.
+            $time = intval($this->options['rotateTime']) ?: 22;
+
+            if ($now < $time || $now > $time) {
+                return;
+            }
+
             $pattern = $this->options['directory'] . '/*.log';
 
             foreach (glob($pattern, GLOB_NOSORT) as $gfile) {
