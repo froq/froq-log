@@ -333,8 +333,8 @@ class Logger
             // Regulate fields for LogParser parsing rules (@see LogParser.parseFileEntry()).
             [$content, $thrown] = $isThrowable ? [null, self::prepare($message, !!$json)] : [$message, null];
 
+            // Eg: {"type":"ERROR", "date":"Sat, 07 Nov 2020 ..", "ip":"127...", "content":null, "thrown":{"type": ..
             $log = json_serialize(
-                // Eg: {"type":"ERROR", "date":"Sat, 07 Nov 2020 ..", "ip":"127...", "content":null, "thrown":{"type": ..
                 ['type' => $type, 'date' => $date, 'ip' => $ip, 'content' => $content, 'thrown' => $thrown],
                 indent: is_bool($jsonIndent) || is_int($jsonIndent) ? $jsonIndent : null
             );
