@@ -220,9 +220,6 @@ class Logger
                 'trace'   => $debug['tracePath']
             ];
         } else {
-            // Escape line feeds (for LogParser).
-            $debug['string'] = addcslashes($debug['string'], "\r\n");
-
             $ret = ['string' => $debug['string'], 'trace' => $debug['traceString']];
         }
 
