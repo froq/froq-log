@@ -129,8 +129,8 @@ class LogParser
         $ret = null;
 
         static $parseThrown;
-        static $reNormalMatch = '~\[(?<type>.+)\] (?<date>.+) \| (?<ip>.+) \| *(?<content>.*)~s';
-        static $reThrownMatch = '~(?<class>.+?)(?:\((?<code>\d+?)\))?: *(?<message>.*?) @ *(?<file>.+?):(?<line>\d+?)~s';
+        static $reNormalMatch = '~\[(?<type>.+?)\] (?<date>.+?) \| (?<ip>.+?) \| *(?<content>.*)~s';
+        static $reThrownMatch = '~(?<class>.+?)(?:\((?<code>\d+?)\))?: *(?<message>.*?) @ *(?<file>.+?):(?<line>\d+)~s';
 
         // Regular log entry.
         if ($entry[0] === '[') {
@@ -142,32 +142,37 @@ class LogParser
                 $parseThrown ??= function ($content) use (&$parseThrown, $reThrownMatch) {
                     if (preg_match_names($reThrownMatch, $content, $match)) {
                         $thrown = array_apply($match, function ($v, $k) {
-                            return ($k === 'code' || $k === 'line') ? (int) $v : $v;
+                            return match ($k) {
+                                'code'  => is_numeric($v) ? (int) $v : $v,
+                                'line'  => (int) $v,
+                                default => $v
+                            };
                         });
 
                         $lines = explode("\n", $content);
-                        $start = null;
+                        $subkey = null;
 
-                        // Add trace.
+                        // Add trace as sub-thrown.
                         foreach ($lines as $i => $line) {
+                            $line = ltrim($line);
+
                             if (preg_match('~^(Cause|Previous):~', $line, $match)) {
-                                $start = $match[1];
+                                $subkey = strtolower($match[1]);
                                 break;
                             }
-                            if ($line && $line[0] === '#') {
+
+                            if (preg_match('~^#\d+ ~', $line)) {
                                 $thrown['trace'][] = $line;
                             }
                         }
 
-                        if ($start) {
+                        if ($subkey) {
                             // Drop "Cause|Previous:" part & get rest.
                             $rest = array_slice($lines, $i + 1);
                             $rest = implode("\n", $rest);
 
-                            $subthrown = $parseThrown($rest);
-                            if ($subthrown) {
-                                $key = strtolower($start);
-                                $thrown[$key] = $subthrown;
+                            if ($subthrown = $parseThrown($rest)) {
+                                $thrown[$subkey] = $subthrown;
                             }
                         }
 
@@ -176,6 +181,13 @@ class LogParser
                 };
 
                 $ret['thrown'] = $parseThrown($ret['content']);
+
+                // @cancel
+                // if (isset($ret['thrown']['file'], $ret['thrown']['line'])) {
+                //     $ret['thrown'] = array_insert($ret['thrown'], 'message', ['path' => sprintf(
+                //         '%s:%d', $ret['thrown']['file'], $ret['thrown']['line']
+                //     )]);
+                // }
             }
         }
         // JSON log entry.
