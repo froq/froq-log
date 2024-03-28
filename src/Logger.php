@@ -126,6 +126,22 @@ class Logger
     }
 
     /**
+     * Put something trivial into last log file.
+     *
+     * @param  string $input
+     * @return void
+     */
+    public function put(string $input): void
+    {
+        if ($file = $this->getFile()) {
+            if (!str_ends_with($input, "\n\n")) {
+                $input .= "\n\n";
+            }
+            @file_put_contents($file, $input, FILE_APPEND);
+        }
+    }
+
+    /**
      * Log a trivial message (this method may be used for skipping leveled calls).
      *
      * @param  string|Stringable $message
@@ -314,7 +330,7 @@ class Logger
         $type = $type ?: match ($level) {
             LogLevel::ERROR => 'ERROR', LogLevel::WARN  => 'WARN',
             LogLevel::INFO  => 'INFO',  LogLevel::DEBUG => 'DEBUG',
-            default         => 'LOG',
+            default         => 'LOG'
         };
 
         $ip   = Util::getClientIp() ?: '-';
